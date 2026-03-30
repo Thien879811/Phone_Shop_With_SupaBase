@@ -35,13 +35,14 @@ export const RepairsPage: React.FC = () => {
   useEffect(() => { loadData(); }, [page]);
 
   const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await repairsApi.getAll({ page, limit, search });
+    setLoading(true);
+    const queryParams = { page, limit, search };
+    await repairsApi.getAll(queryParams).then(res => {
       setData(res.data);
       setTotal(res.total);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
+    }).catch(err => {
+      console.error(err);
+    }).finally(() => setLoading(false));
   };
 
   const handleSearch = () => { setPage(1); loadData(); };

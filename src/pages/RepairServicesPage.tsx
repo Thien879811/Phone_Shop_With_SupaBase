@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Search, Wrench, X, List } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search, X, List } from 'lucide-react';
 import { repairsApi, productsApi, type RepairService, type Product } from '../services/api';
 
 const formatPrice = (val: number) =>

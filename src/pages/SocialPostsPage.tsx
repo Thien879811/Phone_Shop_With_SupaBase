@@ -180,7 +180,7 @@ const SocialPostsPage: React.FC = () => {
       const result = await socialPostsApi.uploadImages(files);
       setForm((prev) => ({
         ...prev,
-        images: [...prev.images, ...result.urls],
+        images: [...prev.images, ...result.map(r => r.imageUrl)],
       }));
     } catch (err) {
       console.error('Failed to upload images:', err);

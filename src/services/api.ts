@@ -540,12 +540,17 @@ export interface RepairService {
 export const repairsApi = {
   getAll: async (params: any = {}) => {
     try {
-      const { data, error } = await supabase
+      const { page = 1, limit = 15 } = params;
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      const { data, count, error } = await supabase
         .from('repairs')
-        .select('*, items:repair_items(*)')
+        .select('*, items:repair_items(*)', { count: 'exact' })
+        .range(from, to)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data || [];
+      return { data: data || [], total: count || 0 };
     } catch (error) {
       throw wrapError(error);
     }
@@ -599,7 +604,7 @@ export const repairsApi = {
       throw wrapError(error);
     }
   },
-  removeItem: async (id: any, itemId: any) => {
+  removeItem: async (_id: any, itemId: any) => {
     try {
       const { error } = await supabase.from('repair_items').delete().eq('id', itemId);
       if (error) throw error;
@@ -767,12 +772,17 @@ export interface SocialPostItem {
 export const socialPostsApi = {
   getAll: async (params: any = {}) => {
     try {
-      const { data, error } = await supabase
+      const { page = 1, limit = 15 } = params;
+      const from = (page - 1) * limit;
+      const to = from + limit - 1;
+
+      const { data, count, error } = await supabase
         .from('social_posts')
-        .select('*, images:post_images(*), platforms:post_platform_status(*, account:social_accounts(*))')
+        .select('*, images:post_images(*), platforms:post_platform_status(*, account:social_accounts(*))', { count: 'exact' })
+        .range(from, to)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data || [];
+      return { data: data || [], total: count || 0 };
     } catch (error) {
       throw wrapError(error);
     }
