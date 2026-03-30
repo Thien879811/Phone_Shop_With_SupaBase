@@ -62,30 +62,30 @@ export const StocksPage: React.FC = () => {
               {data.length === 0 ? (
                 <tr><td colSpan={8}><div className="empty-state"><Warehouse size={40} /><p>Chua co du lieu ton kho</p></div></td></tr>
               ) : (
-                data.map((item) => (
-                  <tr key={item.productId}>
-                    <td><span className="cell-main">{item.productCode}</span></td>
-                    <td><span className="cell-main">{item.productName}</span></td>
-                    <td>{item.category || '-'}</td>
-                    <td>{item.brand || '-'}</td>
-                    <td style={{ textAlign: 'center' }}>{item.totalImported}</td>
-                    <td style={{ textAlign: 'center' }}>
-                      <span style={{ fontWeight: 700, color: item.lowStock ? 'var(--danger)' : 'var(--text-primary)' }}>
-                        {item.totalRemaining}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'center' }}>{item.minStock}</td>
-                    <td>
-                      {item.lowStock ? (
-                        <span className="badge badge-danger">
-                          <AlertTriangle size={12} /> Sap het
-                        </span>
-                      ) : (
-                        <span className="badge badge-success">Du hang</span>
-                      )}
-                    </td>
-                  </tr>
-                ))
+                 data.map((item: StockSummary) => (
+                   <tr key={item.product_id}>
+                     <td><span className="cell-main">{item.product_code}</span></td>
+                     <td><span className="cell-main">{item.product_name}</span></td>
+                     <td>{item.category || '-'}</td>
+                     <td>{item.brand || '-'}</td>
+                     <td style={{ textAlign: 'center' }}>{item.total_imported}</td>
+                     <td style={{ textAlign: 'center' }}>
+                       <span style={{ fontWeight: 700, color: item.low_stock ? 'var(--danger)' : 'var(--text-primary)' }}>
+                         {item.total_remaining}
+                       </span>
+                     </td>
+                     <td style={{ textAlign: 'center' }}>{item.min_stock}</td>
+                     <td>
+                       {item.low_stock ? (
+                         <span className="badge badge-danger">
+                           <AlertTriangle size={12} /> Sap het
+                         </span>
+                       ) : (
+                         <span className="badge badge-success">Du hang</span>
+                       )}
+                     </td>
+                   </tr>
+                 ))
               )}
             </tbody>
           </table>

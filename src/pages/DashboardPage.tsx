@@ -60,7 +60,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="stat-info">
             <div className="stat-label">Sản phẩm trong kho</div>
-            <div className="stat-value">{stats?.totalProducts ?? 0}</div>
+            <div className="stat-value">{stats?.total_products ?? 0}</div>
           </div>
         </div>
 
@@ -70,7 +70,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="stat-info">
             <div className="stat-label">Tổng tồn kho</div>
-            <div className="stat-value">{(stats?.totalStock ?? 0).toLocaleString()}</div>
+            <div className="stat-value">{(stats?.total_stock ?? 0).toLocaleString()}</div>
           </div>
         </div>
 
@@ -80,8 +80,8 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="stat-info">
             <div className="stat-label">Sắp hết hàng</div>
-            <div className="stat-value">{stats?.lowStockCount ?? 0}</div>
-            {(stats?.lowStockCount ?? 0) > 0 && (
+            <div className="stat-value">{stats?.low_stock_count ?? 0}</div>
+            {(stats?.low_stock_count ?? 0) > 0 && (
               <div className="stat-change negative">⚠ Cần nhập thêm</div>
             )}
           </div>
@@ -93,7 +93,7 @@ export const DashboardPage: React.FC = () => {
           </div>
           <div className="stat-info">
             <div className="stat-label">Hoạt động gần đây</div>
-            <div className="stat-value">{stats?.recentMovements?.length ?? 0}</div>
+            <div className="stat-value">{stats?.recent_movements?.length ?? 0}</div>
           </div>
         </div>
       </div>
@@ -102,15 +102,15 @@ export const DashboardPage: React.FC = () => {
       <div className="dashboard-grid">
         <div className="chart-card full-width">
           <h4>📦 Hoạt động kho gần đây</h4>
-          {(stats?.recentMovements?.length ?? 0) === 0 ? (
+          {(stats?.recent_movements?.length ?? 0) === 0 ? (
             <div className="empty-state">
               <Package size={48} />
               <p>Chưa có hoạt động nào</p>
             </div>
           ) : (
             <div className="movement-list">
-              {stats?.recentMovements?.map((m: StockMovement) => {
-                const meta = movementIcons[m.movementType] || movementIcons.ADJUST;
+              {stats?.recent_movements?.map((m: StockMovement) => {
+                const meta = movementIcons[m.movement_type] || movementIcons.ADJUST;
                 return (
                   <div className="movement-item" key={m.id}>
                     <div
@@ -120,10 +120,10 @@ export const DashboardPage: React.FC = () => {
                       {meta.icon}
                     </div>
                     <div className="movement-info">
-                      <div className="movement-title">{m.productName || `Product #${m.productId}`}</div>
+                      <div className="movement-title">{m.product_name || `Product #${m.product_id}`}</div>
                       <div className="movement-meta">
-                        {m.referenceCode && <span>{m.referenceCode} · </span>}
-                        {m.movementType} · {formatDate(m.createdAt)}
+                        {m.reference_code && <span>{m.reference_code} · </span>}
+                        {m.movement_type} · {formatDate(m.created_at)}
                       </div>
                     </div>
                     <div className={`movement-qty ${m.quantity >= 0 ? 'positive' : 'negative'}`}>

@@ -27,7 +27,7 @@ export const MovementsPage: React.FC = () => {
     try {
       setLoading(true);
       const params: any = { page, limit };
-      if (filter) params.movementType = filter;
+      if (filter) params.movement_type = filter;
       const res = await stocksApi.getMovements(params);
       setData(res.data);
       setTotal(res.total);
@@ -77,17 +77,17 @@ export const MovementsPage: React.FC = () => {
                 <tr><td colSpan={5}><div className="empty-state"><History size={40} /><p>Chưa có lịch sử</p></div></td></tr>
               ) : (
                 data.map((item) => {
-                  const meta = movementMeta[item.movementType] || movementMeta.ADJUST;
+                  const meta = movementMeta[item.movement_type] || movementMeta.ADJUST;
                   return (
                     <tr key={item.id}>
-                      <td>{formatDate(item.createdAt)}</td>
-                      <td><span className="cell-main">{item.productName || `#${item.productId}`}</span></td>
+                      <td>{formatDate(item.created_at)}</td>
+                      <td><span className="cell-main">{item.product_name || `#${item.product_id}`}</span></td>
                       <td>
                         <span className="badge" style={{ background: meta.bg, color: meta.color }}>
                           {meta.icon} {meta.label}
                         </span>
                       </td>
-                      <td>{item.referenceCode || '—'}</td>
+                      <td>{item.reference_code || '—'}</td>
                       <td style={{ textAlign: 'center' }}>
                         <span style={{ fontWeight: 700, color: item.quantity >= 0 ? 'var(--success)' : 'var(--danger)' }}>
                           {item.quantity >= 0 ? '+' : ''}{item.quantity}

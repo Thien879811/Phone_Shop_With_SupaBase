@@ -14,9 +14,9 @@ export const RepairServicesPage: React.FC = () => {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [form, setForm] = useState({
     name: '',
-    serviceType: 'REPAIR' as 'REPAIR' | 'REPLACEMENT',
-    defaultPrice: 0,
-    productId: undefined as number | undefined,
+    service_type: 'REPAIR' as 'REPAIR' | 'REPLACEMENT',
+    default_price: 0,
+    product_id: undefined as string | undefined,
     description: '',
     status: 'ACTIVE'
   });
@@ -37,7 +37,7 @@ export const RepairServicesPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.name) return;
-    if (form.serviceType === 'REPLACEMENT' && !form.productId) {
+    if (form.service_type === 'REPLACEMENT' && !form.product_id) {
       alert('Thay thế linh kiện yêu cầu chọn sản phẩm');
       return;
     }
@@ -50,7 +50,7 @@ export const RepairServicesPage: React.FC = () => {
       }
       setShowModal(false);
       setEditingId(null);
-      setForm({ name: '', serviceType: 'REPAIR', defaultPrice: 0, productId: undefined, description: '', status: 'ACTIVE' });
+      setForm({ name: '', service_type: 'REPAIR', default_price: 0, product_id: undefined, description: '', status: 'ACTIVE' });
       loadData();
     } catch (err) { alert('Lỗi lưu dịch vụ'); }
   };
@@ -59,9 +59,9 @@ export const RepairServicesPage: React.FC = () => {
     setEditingId(item.id);
     setForm({
       name: item.name,
-      serviceType: item.serviceType,
-      defaultPrice: item.defaultPrice,
-      productId: item.productId,
+      service_type: item.service_type,
+      default_price: item.default_price,
+      product_id: item.product_id,
       description: item.description || '',
       status: item.status
     });
@@ -129,20 +129,20 @@ export const RepairServicesPage: React.FC = () => {
                   <tr key={item.id}>
                     <td><span className="cell-main">{item.name}</span></td>
                     <td>
-                       <span className={`badge badge-sm ${item.serviceType === 'REPLACEMENT' ? 'badge-info' : 'badge-ghost'}`}>
-                        {item.serviceType === 'REPLACEMENT' ? 'Thay linh kiện' : 'Dịch vụ sửa'}
+                       <span className={`badge badge-sm ${item.service_type === 'REPLACEMENT' ? 'badge-info' : 'badge-ghost'}`}>
+                        {item.service_type === 'REPLACEMENT' ? 'Thay linh kiện' : 'Dịch vụ sửa'}
                        </span>
                     </td>
                     <td>
-                      {item.productId ? (
+                      {item.product_id ? (
                         <div className="cell-multi">
-                           <span className="primary-text">{products.find(p => p.id === item.productId)?.name || 'Sản phẩm ID: '+item.productId}</span>
+                           <span className="primary-text">{products.find(p => p.id === item.product_id)?.name || 'Sản phẩm ID: '+item.product_id}</span>
                            <br />
-                           <span className="secondary-text">Code: {products.find(p => p.id === item.productId)?.code || '—'}</span>
+                           <span className="secondary-text">Code: {products.find(p => p.id === item.product_id)?.code || '—'}</span>
                         </div>
                       ) : '—'}
                     </td>
-                    <td><span className="price highlight">{formatPrice(item.defaultPrice)}</span></td>
+                    <td><span className="price highlight">{formatPrice(item.default_price)}</span></td>
                     <td>
                       <span className={`badge ${item.status === 'ACTIVE' ? 'badge-success' : 'badge-ghost'}`}>
                         {item.status === 'ACTIVE' ? 'Hoạt động' : 'Tạm dừng'}
@@ -182,16 +182,16 @@ export const RepairServicesPage: React.FC = () => {
                 
                 <div className="form-group" style={{ marginTop: 15 }}>
                   <label className="form-label">Loại dịch vụ</label>
-                  <select className="form-input" value={form.serviceType} onChange={(e) => setForm({...form, serviceType: e.target.value as any, productId: e.target.value === 'REPAIR' ? undefined : form.productId})}>
+                  <select className="form-input" value={form.service_type} onChange={(e) => setForm({...form, service_type: e.target.value as any, product_id: e.target.value === 'REPAIR' ? undefined : form.product_id})}>
                     <option value="REPAIR">Sửa chữa (Không liên quan kho)</option>
                     <option value="REPLACEMENT">Thay thế linh kiện (Trừ kho)</option>
                   </select>
                 </div>
 
-                {form.serviceType === 'REPLACEMENT' && (
+                {form.service_type === 'REPLACEMENT' && (
                   <div className="form-group" style={{ marginTop: 15 }}>
                     <label className="form-label">Chọn sản phẩm liên kết (để trừ kho)</label>
-                    <select className="form-input" value={form.productId} onChange={(e) => setForm({...form, productId: Number(e.target.value)})} required>
+                    <select className="form-input" value={form.product_id} onChange={(e) => setForm({...form, product_id: e.target.value})} required>
                       <option value="">-- Chọn sản phẩm --</option>
                       {products.map(p => (
                         <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
@@ -202,7 +202,7 @@ export const RepairServicesPage: React.FC = () => {
 
                 <div className="form-group" style={{ marginTop: 15 }}>
                   <label className="form-label">Giá chuẩn (VNĐ)</label>
-                  <input className="form-input" type="number" value={form.defaultPrice} onChange={(e) => setForm({...form, defaultPrice: Number(e.target.value)})} />
+                  <input className="form-input" type="number" value={form.default_price} onChange={(e) => setForm({...form, default_price: Number(e.target.value)})} />
                 </div>
                 <div className="form-group" style={{ marginTop: 15 }}>
                   <label className="form-label">Mô tả chi tiết</label>

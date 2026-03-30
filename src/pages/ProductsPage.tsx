@@ -125,8 +125,8 @@ export const ProductsPage: React.FC = () => {
                     </td>
                     <td>{item.categoryRel?.name || item.category || '—'}</td>
                     <td>{item.brandRel?.name || item.brand || '—'}</td>
-                    <td><span className="price">{formatPrice(item.sellPrice)}</span></td>
-                    <td style={{ textAlign: 'center' }}>{item.minStock}</td>
+                    <td><span className="price">{formatPrice(item.price)}</span></td>
+                    <td style={{ textAlign: 'center' }}>{item.min_stock}</td>
                     <td>
                       <span className={`badge ${item.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>
                         {item.status}
@@ -188,8 +188,8 @@ export const ProductsPage: React.FC = () => {
                 <div><label className="form-label">Danh mục</label><p>{viewItem.categoryRel?.name || viewItem.category || '—'}</p></div>
                 <div><label className="form-label">Thương hiệu</label><p>{viewItem.brandRel?.name || viewItem.brand || '—'}</p></div>
                 <div><label className="form-label">Đơn vị</label><p>{viewItem.unit || '—'}</p></div>
-                <div><label className="form-label">Giá bán</label><p className="price">{formatPrice(viewItem.sellPrice)}</p></div>
-                <div><label className="form-label">Tồn tối thiểu</label><p>{viewItem.minStock}</p></div>
+                <div><label className="form-label">Giá bán</label><p className="price">{formatPrice(viewItem.price)}</p></div>
+                <div><label className="form-label">Tồn tối thiểu</label><p>{viewItem.min_stock}</p></div>
                 <div><label className="form-label">Trạng thái</label><span className={`badge ${viewItem.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>{viewItem.status}</span></div>
               </div>
             </div>
@@ -213,12 +213,12 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onClose, o
   const [form, setForm] = useState({
     code: product?.code || '',
     name: product?.name || '',
-    categoryId: product?.categoryId || undefined,
-    brandId: product?.brandId || undefined,
+    category_id: product?.category_id || undefined,
+    brand_id: product?.brand_id || undefined,
     unit: product?.unit || 'Cái',
     barcode: product?.barcode || '',
-    sellPrice: product?.sellPrice || 0,
-    minStock: product?.minStock || 0,
+    price: product?.price || 0,
+    min_stock: product?.min_stock || 0,
     status: product?.status || 'ACTIVE',
   });
 
@@ -262,14 +262,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onClose, o
               </div>
               <div className="form-group">
                 <label className="form-label">Danh mục</label>
-                <select className="form-input" value={form.categoryId} onChange={(e) => handleChange('categoryId', e.target.value ? Number(e.target.value) : undefined)}>
+                <select className="form-input" value={form.category_id} onChange={(e) => handleChange('category_id', e.target.value || undefined)}>
                   <option value="">-- Chọn danh mục --</option>
                   {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
                 </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Thương hiệu</label>
-                <select className="form-input" value={form.brandId} onChange={(e) => handleChange('brandId', e.target.value ? Number(e.target.value) : undefined)}>
+                <select className="form-input" value={form.brand_id} onChange={(e) => handleChange('brand_id', e.target.value || undefined)}>
                   <option value="">-- Chọn nhãn hàng --</option>
                   {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
@@ -284,11 +284,11 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onClose, o
               </div>
               <div className="form-group">
                 <label className="form-label">Giá bán (VNĐ)</label>
-                <input className="form-input" type="number" value={form.sellPrice} onChange={(e) => handleChange('sellPrice', Number(e.target.value))} />
+                <input className="form-input" type="number" value={form.price} onChange={(e) => handleChange('price', Number(e.target.value))} />
               </div>
               <div className="form-group">
                 <label className="form-label">Tồn tối thiểu</label>
-                <input className="form-input" type="number" value={form.minStock} onChange={(e) => handleChange('minStock', Number(e.target.value))} />
+                <input className="form-input" type="number" value={form.min_stock} onChange={(e) => handleChange('min_stock', Number(e.target.value))} />
               </div>
               <div className="form-group form-full">
                 <label className="form-label">Trạng thái</label>

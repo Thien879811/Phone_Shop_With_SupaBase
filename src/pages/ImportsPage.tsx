@@ -89,9 +89,9 @@ export const ImportsPage: React.FC = () => {
                   <tr key={item.id}>
                     <td><span className="cell-main">{item.code}</span></td>
                     <td>{item.supplier?.name || '—'}</td>
-                    <td>{formatDate(item.importDate)}</td>
+                    <td>{formatDate(item.receipt_date)}</td>
                     <td style={{ textAlign: 'center' }}>{item.items?.length || 0}</td>
-                    <td><span className="price highlight">{formatPrice(item.totalAmount)}</span></td>
+                    <td><span className="price highlight">{formatPrice(item.total_amount)}</span></td>
                     <td>
                       <span className={`badge ${item.status === 'CONFIRMED' ? 'badge-success' : item.status === 'CANCELLED' ? 'badge-danger' : 'badge-warning'}`}>
                         {item.status === 'CONFIRMED' ? 'Đã xác nhận' : item.status === 'CANCELLED' ? 'Đã hủy' : 'Nháp'}
@@ -134,8 +134,8 @@ export const ImportsPage: React.FC = () => {
               <div className="form-grid" style={{ marginBottom: 20 }}>
                 <div><label className="form-label">Mã phiếu</label><p>{viewItem.code}</p></div>
                 <div><label className="form-label">NCC</label><p>{viewItem.supplier?.name || '—'}</p></div>
-                <div><label className="form-label">Ngày nhập</label><p>{formatDate(viewItem.importDate)}</p></div>
-                <div><label className="form-label">Tổng tiền</label><p className="price highlight">{formatPrice(viewItem.totalAmount)}</p></div>
+                <div><label className="form-label">Ngày nhập</label><p>{formatDate(viewItem.receipt_date)}</p></div>
+                <div><label className="form-label">Tổng tiền</label><p className="price highlight">{formatPrice(viewItem.total_amount)}</p></div>
               </div>
               <h4 style={{ marginBottom: 12, color: 'var(--text-primary)' }}>Danh sách sản phẩm</h4>
               <table className="data-table">
@@ -152,10 +152,10 @@ export const ImportsPage: React.FC = () => {
                   {viewItem.items?.map((it, idx) => (
                     <tr key={idx}>
                       <td>{idx + 1}</td>
-                      <td><span className="cell-main">{it.productName || `#${it.productId}`}</span></td>
+                      <td><span className="cell-main">{it.product_name || `#${it.product_id}`}</span></td>
                       <td>{it.quantity}</td>
-                      <td>{formatPrice(it.importPrice)}</td>
-                      <td><span className="price">{formatPrice(it.totalPrice || it.quantity * it.importPrice)}</span></td>
+                      <td>{formatPrice(it.import_price)}</td>
+                      <td><span className="price">{formatPrice(it.total_price || it.quantity * it.import_price)}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -177,13 +177,13 @@ const ImportFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => vo
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [form, setForm] = useState({
     code: `PN${Date.now().toString().slice(-6)}`,
-    supplierId: '',
-    importDate: new Date().toISOString().split('T')[0],
+    supplier_id: '',
+    receipt_date: new Date().toISOString().split('T')[0],
     note: '',
   });
 
-  const [items, setItems] = useState<Array<{ productId: string; quantity: number; importPrice: number }>>([
-    { productId: '', quantity: 1, importPrice: 0 },
+  const [items, setItems] = useState<Array<{ product_id: string; quantity: number; import_price: number }>>([
+    { product_id: '', quantity: 1, import_price: 0 },
   ]);
 
   useEffect(() => {
@@ -191,7 +191,7 @@ const ImportFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => vo
     suppliersApi.getAll({ limit: 100 }).then((r: any) => setSuppliers(r.data)).catch(() => {});
   }, []);
 
-  const addItem = () => setItems([...items, { productId: '', quantity: 1, importPrice: 0 }]);
+  const addItem = () => setItems([...items, { product_id: '', quantity: 1, import_price: 0 }]);
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
 
   const updateItem = (idx: number, field: string, value: any) => {
@@ -200,22 +200,22 @@ const ImportFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => vo
     setItems(updated);
   };
 
-  const totalAmount = items.reduce((sum, it) => sum + it.quantity * it.importPrice, 0);
+  const total_amount = items.reduce((sum, it) => sum + it.quantity * it.import_price, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const validItems = items.filter((it) => it.productId && it.quantity > 0);
+    const validItems = items.filter((it) => it.product_id && it.quantity > 0);
     if (validItems.length === 0) { alert('Vui lòng thêm ít nhất 1 sản phẩm'); return; }
 
     onSave({
       code: form.code,
-      supplierId: form.supplierId ? Number(form.supplierId) : null,
-      importDate: form.importDate,
+      supplier_id: form.supplier_id || null,
+      receipt_date: form.receipt_date,
       note: form.note,
       items: validItems.map((it) => ({
-        productId: Number(it.productId),
+        product_id: it.product_id,
         quantity: it.quantity,
-        importPrice: it.importPrice,
+        import_price: it.import_price,
       })),
     });
   };
@@ -236,14 +236,14 @@ const ImportFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => vo
               </div>
               <div className="form-group">
                 <label className="form-label">Nhà cung cấp</label>
-                <select className="form-input" value={form.supplierId} onChange={(e) => setForm({ ...form, supplierId: e.target.value })}>
+                <select className="form-input" value={form.supplier_id} onChange={(e) => setForm({ ...form, supplier_id: e.target.value })}>
                   <option value="">-- Chọn NCC --</option>
                   {suppliers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
                 </select>
               </div>
               <div className="form-group">
                 <label className="form-label">Ngày nhập</label>
-                <input className="form-input" type="date" value={form.importDate} onChange={(e) => setForm({ ...form, importDate: e.target.value })} />
+                <input className="form-input" type="date" value={form.receipt_date} onChange={(e) => setForm({ ...form, receipt_date: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">Ghi chú</label>
@@ -256,7 +256,7 @@ const ImportFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => vo
               <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-end' }}>
                 <div style={{ flex: 3 }}>
                   {idx === 0 && <label className="form-label">Sản phẩm</label>}
-                  <select className="form-input" value={item.productId} onChange={(e) => updateItem(idx, 'productId', e.target.value)}>
+                  <select className="form-input" value={item.product_id} onChange={(e) => updateItem(idx, 'product_id', e.target.value)}>
                     <option value="">-- Chọn SP --</option>
                     {products.map((p) => <option key={p.id} value={p.id}>{p.code} — {p.name}</option>)}
                   </select>
@@ -267,11 +267,11 @@ const ImportFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => vo
                 </div>
                 <div style={{ flex: 2 }}>
                   {idx === 0 && <label className="form-label">Giá nhập (VNĐ)</label>}
-                  <input className="form-input" type="number" min={0} value={item.importPrice} onChange={(e) => updateItem(idx, 'importPrice', Number(e.target.value))} />
+                  <input className="form-input" type="number" min={0} value={item.import_price} onChange={(e) => updateItem(idx, 'import_price', Number(e.target.value))} />
                 </div>
                 <div style={{ flex: 1.5, textAlign: 'right' }}>
                   {idx === 0 && <label className="form-label">Thành tiền</label>}
-                  <div className="price" style={{ padding: '10px 0' }}>{formatPrice(item.quantity * item.importPrice)}</div>
+                  <div className="price" style={{ padding: '10px 0' }}>{formatPrice(item.quantity * item.import_price)}</div>
                 </div>
                 <button type="button" className="btn btn-ghost btn-icon" onClick={() => removeItem(idx)} style={{ color: 'var(--danger)' }}>
                   <Trash2 size={15} />
@@ -283,7 +283,7 @@ const ImportFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => vo
             </button>
 
             <div style={{ textAlign: 'right', marginTop: 20, fontSize: 16, fontWeight: 700, color: 'var(--success)' }}>
-              Tổng cộng: {formatPrice(totalAmount)}
+              Tổng cộng: {formatPrice(total_amount)}
             </div>
           </div>
           <div className="modal-footer">

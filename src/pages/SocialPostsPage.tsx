@@ -54,11 +54,11 @@ const SocialPostsPage: React.FC = () => {
   const [form, setForm] = useState({
     title: '',
     content: '',
-    scheduledTime: '',
-    platformIds: [] as number[],
+    scheduled_time: '',
+    platform_ids: [] as number[],
     images: [] as string[],
-    isRepeated: false,
-    repeatInterval: 1,
+    is_repeated: false,
+    repeat_interval: 1,
   });
   const [uploadingImages, setUploadingImages] = useState(false);
 
@@ -96,7 +96,7 @@ const SocialPostsPage: React.FC = () => {
     try {
       const payload = {
         ...form,
-        scheduledTime: form.scheduledTime || undefined,
+        scheduled_time: form.scheduled_time || undefined,
       };
       if (editId) {
         await socialPostsApi.update(editId, payload);
@@ -116,11 +116,11 @@ const SocialPostsPage: React.FC = () => {
     setForm({
       title: post.title,
       content: post.content,
-      scheduledTime: post.scheduledTime ? new Date(post.scheduledTime).toISOString().slice(0, 16) : '',
-      platformIds: post.platforms?.map((p) => p.accountId) || [],
-      images: post.images?.map((img) => img.imageUrl) || [],
-      isRepeated: post.isRepeated || false,
-      repeatInterval: post.repeatInterval || 1,
+      scheduled_time: post.scheduled_time ? new Date(post.scheduled_time).toISOString().slice(0, 16) : '',
+      platform_ids: post.platforms?.map((p) => p.account_id) || [],
+      images: post.images?.map((img) => img.image_url) || [],
+      is_repeated: post.is_repeated || false,
+      repeat_interval: post.repeat_interval || 1,
     });
     setShowModal(true);
   };
@@ -200,15 +200,15 @@ const SocialPostsPage: React.FC = () => {
   const togglePlatform = (accountId: number) => {
     setForm((prev) => ({
       ...prev,
-      platformIds: prev.platformIds.includes(accountId)
-        ? prev.platformIds.filter((id) => id !== accountId)
-        : [...prev.platformIds, accountId],
+      platform_ids: prev.platform_ids.includes(accountId)
+        ? prev.platform_ids.filter((id) => id !== accountId)
+        : [...prev.platform_ids, accountId],
     }));
   };
 
   const resetForm = () => {
     setEditId(null);
-    setForm({ title: '', content: '', scheduledTime: '', platformIds: [], images: [], isRepeated: false, repeatInterval: 1 });
+    setForm({ title: '', content: '', scheduled_time: '', platform_ids: [], images: [], is_repeated: false, repeat_interval: 1 });
   };
 
   const openCreate = () => {
@@ -349,17 +349,17 @@ const SocialPostsPage: React.FC = () => {
                       <span className={`badge ${statusInfo.badge}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                         {statusInfo.icon} {statusInfo.label}
                       </span>
-                      {post.isRepeated && (
+                      {post.is_repeated && (
                         <div style={{ marginTop: '4px' }}>
                           <span className="badge badge-info" style={{ fontSize: '10px', gap: '3px' }}>
-                            <Repeat size={10} /> Lặp lại {post.repeatInterval} ngày
+                            <Repeat size={10} /> Lặp lại {post.repeat_interval} ngày
                           </span>
                         </div>
                       )}
                     </td>
                     <td style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-                      {post.scheduledTime
-                        ? new Date(post.scheduledTime).toLocaleString('vi-VN')
+                      {post.scheduled_time
+                        ? new Date(post.scheduled_time).toLocaleString('vi-VN')
                         : '—'}
                     </td>
                     <td>
@@ -379,7 +379,7 @@ const SocialPostsPage: React.FC = () => {
                             title={`Status: ${pp.status}`}
                           >
                             {getPlatformIcon(pp.account?.platform)}
-                            {pp.account?.pageName}
+                            {pp.account?.page_name}
                             {pp.status === 'POSTED' && <CheckCircle size={10} />}
                             {pp.status === 'FAILED' && <XCircle size={10} />}
                           </span>
@@ -515,7 +515,7 @@ const SocialPostsPage: React.FC = () => {
                         }}
                       >
                         <img
-                          src={`http://localhost:3000${img.imageUrl}`}
+                          src={`http://localhost:3000${img.image_url}`}
                           alt=""
                           style={{ width: '100%', height: '100%', objectFit: 'cover' }}
                         />
@@ -547,15 +547,15 @@ const SocialPostsPage: React.FC = () => {
                           <span style={{ color: getPlatformColor(pp.account?.platform) }}>
                             {getPlatformIcon(pp.account?.platform)}
                           </span>
-                          <span style={{ fontWeight: 500 }}>{pp.account?.pageName}</span>
+                          <span style={{ fontWeight: 500 }}>{pp.account?.page_name}</span>
                         </div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <span className={`badge ${ppStatus.badge}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                             {ppStatus.icon} {ppStatus.label}
                           </span>
-                          {pp.postedAt && (
+                          {pp.posted_at && (
                             <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
-                              {new Date(pp.postedAt).toLocaleString('vi-VN')}
+                              {new Date(pp.posted_at).toLocaleString('vi-VN')}
                             </span>
                           )}
                         </div>
@@ -718,7 +718,7 @@ const SocialPostsPage: React.FC = () => {
                 ) : (
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                     {accounts.map((acc) => {
-                      const selected = form.platformIds.includes(acc.id);
+                      const selected = form.platform_ids.includes(acc.id);
                       return (
                         <button
                           key={acc.id}
@@ -740,7 +740,7 @@ const SocialPostsPage: React.FC = () => {
                           }}
                         >
                           {getPlatformIcon(acc.platform)}
-                          {acc.pageName}
+                          {acc.page_name}
                           {selected && <CheckCircle size={14} />}
                         </button>
                       );
@@ -757,12 +757,12 @@ const SocialPostsPage: React.FC = () => {
                   <input
                     type="datetime-local"
                     className="form-input"
-                    value={form.scheduledTime}
-                    onChange={(e) => setForm({ ...form, scheduledTime: e.target.value })}
+                    value={form.scheduled_time}
+                    onChange={(e) => setForm({ ...form, scheduled_time: e.target.value })}
                     style={{ flex: 1 }}
                   />
-                  {form.scheduledTime && (
-                    <button className="btn btn-ghost btn-sm" onClick={() => setForm({ ...form, scheduledTime: '' })}>
+                  {form.scheduled_time && (
+                    <button className="btn btn-ghost btn-sm" onClick={() => setForm({ ...form, scheduled_time: '' })}>
                       <X size={14} /> Xoá lịch
                     </button>
                   )}
@@ -771,11 +771,11 @@ const SocialPostsPage: React.FC = () => {
 
               {/* Repeat Settings */}
               <div className="form-group" style={{ padding: '16px', background: 'var(--bg-input)', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: form.isRepeated ? '12px' : '0' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '10px', cursor: 'pointer', marginBottom: form.is_repeated ? '12px' : '0' }}>
                   <input
                     type="checkbox"
-                    checked={form.isRepeated}
-                    onChange={(e) => setForm({ ...form, isRepeated: e.target.checked })}
+                    checked={form.is_repeated}
+                    onChange={(e) => setForm({ ...form, is_repeated: e.target.checked })}
                     style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                   />
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -783,8 +783,8 @@ const SocialPostsPage: React.FC = () => {
                     <span style={{ fontWeight: 600 }}>Tự động lặp lại bài đăng này</span>
                   </div>
                 </label>
-                
-                {form.isRepeated && (
+
+                {form.is_repeated && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px', paddingLeft: '28px', animation: 'fadeIn 0.2s ease' }}>
                     <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>Lặp lại sau mỗi:</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -794,8 +794,8 @@ const SocialPostsPage: React.FC = () => {
                         max="30"
                         className="form-input"
                         style={{ width: '70px', textAlign: 'center' }}
-                        value={form.repeatInterval}
-                        onChange={(e) => setForm({ ...form, repeatInterval: parseInt(e.target.value) || 1 })}
+                        value={form.repeat_interval}
+                        onChange={(e) => setForm({ ...form, repeat_interval: parseInt(e.target.value) || 1 })}
                       />
                       <span style={{ fontSize: '14px', color: 'var(--text-secondary)' }}>ngày</span>
                     </div>
@@ -810,7 +810,7 @@ const SocialPostsPage: React.FC = () => {
               <button className="btn btn-outline" onClick={handleSubmit}>
                 <FileText size={14} /> Lưu nháp
               </button>
-              {form.scheduledTime ? (
+              {form.scheduled_time ? (
                 <button className="btn btn-primary" onClick={handleSubmit}>
                   <Clock size={14} /> Lên lịch
                 </button>
@@ -820,7 +820,7 @@ const SocialPostsPage: React.FC = () => {
                   onClick={async () => {
                     try {
                       let postId = editId;
-                      const payload = { ...form, scheduledTime: undefined };
+                      const payload = { ...form, scheduled_time: undefined };
                       if (editId) {
                         await socialPostsApi.update(editId, payload);
                       } else {

@@ -27,10 +27,10 @@ const SocialAccountsPage: React.FC = () => {
 
   const [form, setForm] = useState({
     platform: 'facebook',
-    pageName: '',
-    pageId: '',
-    accessToken: '',
-    apiUrl: '',
+    page_name: '',
+    page_id: '',
+    access_token: '',
+    api_url: '',
   });
 
   const loadAccounts = async () => {
@@ -68,10 +68,10 @@ const SocialAccountsPage: React.FC = () => {
     setEditId(account.id);
     setForm({
       platform: account.platform,
-      pageName: account.pageName,
-      pageId: account.pageId,
-      accessToken: account.accessToken,
-      apiUrl: account.apiUrl || '',
+      page_name: account.page_name,
+      page_id: account.page_id,
+      access_token: account.access_token,
+      api_url: account.api_url || '',
     });
     setShowModal(true);
   };
@@ -101,7 +101,7 @@ const SocialAccountsPage: React.FC = () => {
 
   const resetForm = () => {
     setEditId(null);
-    setForm({ platform: 'facebook', pageName: '', pageId: '', accessToken: '', apiUrl: '' });
+    setForm({ platform: 'facebook', page_name: '', page_id: '', access_token: '', api_url: '' });
   };
 
   const openCreate = () => {
@@ -111,7 +111,7 @@ const SocialAccountsPage: React.FC = () => {
 
   const filtered = accounts.filter(
     (a) =>
-      a.pageName.toLowerCase().includes(search.toLowerCase()) ||
+      a.page_name.toLowerCase().includes(search.toLowerCase()) ||
       a.platform.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -227,13 +227,13 @@ const SocialAccountsPage: React.FC = () => {
                     </span>
                   </td>
                   <td>
-                    <span className="cell-main">{account.pageName}</span>
+                    <span className="cell-main">{account.page_name}</span>
                   </td>
                   <td>
-                    <code style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{account.pageId}</code>
+                    <code style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{account.page_id}</code>
                   </td>
                   <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                    {account.apiUrl || '—'}
+                    {account.api_url || '—'}
                   </td>
                   <td>
                     <span className={`badge ${account.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>
@@ -241,7 +241,7 @@ const SocialAccountsPage: React.FC = () => {
                     </span>
                   </td>
                   <td style={{ color: 'var(--text-muted)', fontSize: '12px' }}>
-                    {new Date(account.createdAt).toLocaleDateString('vi-VN')}
+                    {new Date(account.created_at).toLocaleDateString('vi-VN')}
                   </td>
                   <td>
                     <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
@@ -319,8 +319,8 @@ const SocialAccountsPage: React.FC = () => {
                   <input
                     className="form-input"
                     placeholder="VD: PhoneShop Official"
-                    value={form.pageName}
-                    onChange={(e) => setForm({ ...form, pageName: e.target.value })}
+                    value={form.page_name}
+                    onChange={(e) => setForm({ ...form, page_name: e.target.value })}
                   />
                 </div>
                 <div className="form-group">
@@ -328,8 +328,8 @@ const SocialAccountsPage: React.FC = () => {
                   <input
                     className="form-input"
                     placeholder="VD: 123456789"
-                    value={form.pageId}
-                    onChange={(e) => setForm({ ...form, pageId: e.target.value })}
+                    value={form.page_id}
+                    onChange={(e) => setForm({ ...form, page_id: e.target.value })}
                   />
                 </div>
               </div>
@@ -339,8 +339,8 @@ const SocialAccountsPage: React.FC = () => {
                 <textarea
                   className="form-input"
                   placeholder="Nhập Access Token..."
-                  value={form.accessToken}
-                  onChange={(e) => setForm({ ...form, accessToken: e.target.value })}
+                  value={form.access_token}
+                  onChange={(e) => setForm({ ...form, access_token: e.target.value })}
                   style={{ minHeight: '80px', fontFamily: 'monospace', fontSize: '12px' }}
                 />
               </div>
@@ -350,8 +350,8 @@ const SocialAccountsPage: React.FC = () => {
                 <input
                   className="form-input"
                   placeholder={form.platform === 'facebook' ? 'https://graph.facebook.com' : 'https://openapi.zalo.me'}
-                  value={form.apiUrl}
-                  onChange={(e) => setForm({ ...form, apiUrl: e.target.value })}
+                  value={form.api_url}
+                  onChange={(e) => setForm({ ...form, api_url: e.target.value })}
                 />
               </div>
             </div>

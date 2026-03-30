@@ -89,16 +89,16 @@ export const SalesPage: React.FC = () => {
                 data.map((item: SalesInvoice) => (
                   <tr key={item.id}>
                     <td><span className="cell-main">{item.code}</span></td>
-                    <td>{item.customerName || 'Khach le'}</td>
-                    <td>{item.customerPhone || '-'}</td>
+                    <td>{item.customer_name || 'Khach le'}</td>
+                    <td>{item.customer_phone || '-'}</td>
                     <td style={{ textAlign: 'center' }}>{item.items?.length || 0}</td>
-                    <td><span className="price highlight">{formatPrice(item.totalAmount)}</span></td>
+                    <td><span className="price highlight">{formatPrice(item.total_amount)}</span></td>
                     <td>
                       <span className={`badge ${item.status === 'CONFIRMED' ? 'badge-success' : item.status === 'CANCELLED' ? 'badge-danger' : 'badge-warning'}`}>
                         {item.status}
                       </span>
                     </td>
-                    <td>{formatDate(item.createdAt)}</td>
+                    <td>{formatDate(item.created_at)}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
                         <button className="btn btn-ghost btn-icon" onClick={() => setViewItem(item)}><Eye size={15} /></button>
@@ -135,9 +135,9 @@ export const SalesPage: React.FC = () => {
             <div className="modal-body">
               <div className="form-grid" style={{ marginBottom: 20 }}>
                 <div><label className="form-label">Ma HD</label><p>{viewItem.code}</p></div>
-                <div><label className="form-label">Khach hang</label><p>{viewItem.customerName || 'Khach le'}</p></div>
-                <div><label className="form-label">SDT</label><p>{viewItem.customerPhone || '-'}</p></div>
-                <div><label className="form-label">Tong tien</label><p className="price highlight">{formatPrice(viewItem.totalAmount)}</p></div>
+                <div><label className="form-label">Khach hang</label><p>{viewItem.customer_name || 'Khach le'}</p></div>
+                <div><label className="form-label">SDT</label><p>{viewItem.customer_phone || '-'}</p></div>
+                <div><label className="form-label">Tong tien</label><p className="price highlight">{formatPrice(viewItem.total_amount)}</p></div>
               </div>
               <table className="data-table">
                 <thead>
@@ -147,7 +147,7 @@ export const SalesPage: React.FC = () => {
                   {viewItem.items?.map((it: any, idx: number) => (
                     <tr key={idx}>
                       <td>{idx + 1}</td>
-                      <td>{it.productName || `#${it.productId}`}</td>
+                      <td>{it.product_name || `#${it.product_id}`}</td>
                       <td>{it.quantity}</td>
                       <td>{formatPrice(it.price)}</td>
                       <td>{formatPrice(it.total || it.quantity * it.price)}</td>
@@ -169,26 +169,26 @@ const SalesFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => voi
   const [products, setProducts] = useState<Product[]>([]);
   const [form, setForm] = useState({
     code: `HD${Date.now().toString().slice(-6)}`,
-    customerName: '',
-    customerPhone: '',
+    customer_name: '',
+    customer_phone: '',
     note: '',
   });
-  const [items, setItems] = useState<Array<{ productId: string; quantity: number; price: number }>>([
-    { productId: '', quantity: 1, price: 0 },
+  const [items, setItems] = useState<Array<{ product_id: string; quantity: number; price: number }>>([
+    { product_id: '', quantity: 1, price: 0 },
   ]);
 
   useEffect(() => {
     productsApi.getAll({ limit: 100 }).then((r: any) => setProducts(r.data)).catch(() => {});
   }, []);
 
-  const addItem = () => setItems([...items, { productId: '', quantity: 1, price: 0 }]);
+  const addItem = () => setItems([...items, { product_id: '', quantity: 1, price: 0 }]);
   const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
   const updateItem = (idx: number, field: string, value: any) => {
     const updated = [...items];
     (updated[idx] as any)[field] = value;
-    if (field === 'productId') {
-      const product = products.find((p) => p.id === Number(value));
-      if (product) updated[idx].price = product.sellPrice;
+    if (field === 'product_id') {
+      const product = products.find((p) => p.id === value);
+      if (product) updated[idx].price = product.price;
     }
     setItems(updated);
   };
@@ -197,11 +197,11 @@ const SalesFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => voi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const valid = items.filter((it) => it.productId && it.quantity > 0);
+    const valid = items.filter((it) => it.product_id && it.quantity > 0);
     if (!valid.length) { alert('Add at least 1 product'); return; }
     onSave({
       ...form,
-      items: valid.map((it) => ({ productId: Number(it.productId), quantity: it.quantity, price: it.price })),
+      items: valid.map((it) => ({ product_id: it.product_id, quantity: it.quantity, price: it.price })),
     });
   };
 
@@ -221,11 +221,11 @@ const SalesFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => voi
               </div>
               <div className="form-group">
                 <label className="form-label">Khach hang</label>
-                <input className="form-input" value={form.customerName} onChange={(e) => setForm({ ...form, customerName: e.target.value })} />
+                <input className="form-input" value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">SDT</label>
-                <input className="form-input" value={form.customerPhone} onChange={(e) => setForm({ ...form, customerPhone: e.target.value })} />
+                <input className="form-input" value={form.customer_phone} onChange={(e) => setForm({ ...form, customer_phone: e.target.value })} />
               </div>
               <div className="form-group">
                 <label className="form-label">Ghi chu</label>
@@ -237,7 +237,7 @@ const SalesFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => voi
               <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-end' }}>
                 <div style={{ flex: 3 }}>
                   {idx === 0 && <label className="form-label">San pham</label>}
-                  <select className="form-input" value={item.productId} onChange={(e) => updateItem(idx, 'productId', e.target.value)}>
+                  <select className="form-input" value={item.product_id} onChange={(e) => updateItem(idx, 'product_id', e.target.value)}>
                     <option value="">-- Chon SP --</option>
                     {products.map((p) => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
                   </select>
