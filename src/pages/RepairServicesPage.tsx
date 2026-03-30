@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Trash2, Edit2, Search, X, List } from 'lucide-react';
+import { Plus, Trash2, Edit2, Search, List } from 'lucide-react';
 import { repairsApi, productsApi, type RepairService, type Product } from '../services/api';
-
-const formatPrice = (val: number) =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+import { formatPrice } from '../utils/format';
+import { ServiceFormModal } from '../components/repair/ServiceFormModal';
 
 export const RepairServicesPage: React.FC = () => {
   const [data, setData] = useState<RepairService[]>([]);
@@ -12,14 +11,7 @@ export const RepairServicesPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [form, setForm] = useState({
-    name: '',
-    service_type: 'REPAIR' as 'REPAIR' | 'REPLACEMENT',
-    default_price: 0,
-    product_id: undefined as string | undefined,
-    description: '',
-    status: 'ACTIVE'
-  });
+  const [editingData, setEditingData] = useState<any>(null);
 
   useEffect(() => { loadData(); }, []);
 
@@ -34,30 +26,22 @@ export const RepairServicesPage: React.FC = () => {
     finally { setLoading(false); }
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.name) return;
-    if (form.service_type === 'REPLACEMENT' && !form.product_id) {
-      alert('Thay thế linh kiện yêu cầu chọn sản phẩm');
-      return;
-    }
-
-    try {
-      if (editingId) {
-        await repairsApi.updateService(editingId, form); 
-      } else {
-        await repairsApi.createService(form);
-      }
-      setShowModal(false);
-      setEditingId(null);
-      setForm({ name: '', service_type: 'REPAIR', default_price: 0, product_id: undefined, description: '', status: 'ACTIVE' });
-      loadData();
-    } catch (err) { alert('Lỗi lưu dịch vụ'); }
+  const handleOpenCreate = () => {
+    setEditingId(null);
+    setEditingData({
+      name: '',
+      service_type: 'REPAIR',
+      default_price: 0,
+      product_id: undefined,
+      description: '',
+      status: 'ACTIVE'
+    });
+    setShowModal(true);
   };
 
   const handleEdit = (item: RepairService) => {
     setEditingId(item.id);
-    setForm({
+    setEditingData({
       name: item.name,
       service_type: item.service_type,
       default_price: item.default_price,
@@ -66,6 +50,18 @@ export const RepairServicesPage: React.FC = () => {
       status: item.status
     });
     setShowModal(true);
+  };
+
+  const handleSave = async (formData: any) => {
+    try {
+      if (editingId) {
+        await repairsApi.updateService(editingId, formData); 
+      } else {
+        await repairsApi.createService(formData);
+      }
+      setShowModal(false);
+      loadData();
+    } catch (err) { alert('Lỗi lưu dịch vụ'); }
   };
 
   const handleDelete = async (id: number) => {
@@ -89,7 +85,7 @@ export const RepairServicesPage: React.FC = () => {
           <p>Quản lý các loại dịch vụ sửa chữa chuẩn của cửa hàng</p>
         </div>
         <div className="page-header-actions">
-          <button className="btn btn-primary" onClick={() => { setShowModal(true); setEditingId(null); }}>
+          <button className="btn btn-primary" onClick={handleOpenCreate}>
             <Plus size={16} /> Thêm dịch vụ
           </button>
         </div>
@@ -167,62 +163,13 @@ export const RepairServicesPage: React.FC = () => {
       </div>
 
       {showModal && (
-        <div className="modal-overlay" onClick={() => setShowModal(false)}>
-          <div className="modal modal-md" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>{editingId ? 'Cập nhật dịch vụ' : 'Thêm dịch vụ sửa chữa mới'}</h3>
-              <button className="btn btn-ghost btn-icon" onClick={() => setShowModal(false)}><X size={18} /></button>
-            </div>
-            <form onSubmit={handleSubmit}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="form-label">Tên dịch vụ (Ví dụ: Thay pin iPhone 11)</label>
-                  <input className="form-input" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required />
-                </div>
-                
-                <div className="form-group" style={{ marginTop: 15 }}>
-                  <label className="form-label">Loại dịch vụ</label>
-                  <select className="form-input" value={form.service_type} onChange={(e) => setForm({...form, service_type: e.target.value as any, product_id: e.target.value === 'REPAIR' ? undefined : form.product_id})}>
-                    <option value="REPAIR">Sửa chữa (Không liên quan kho)</option>
-                    <option value="REPLACEMENT">Thay thế linh kiện (Trừ kho)</option>
-                  </select>
-                </div>
-
-                {form.service_type === 'REPLACEMENT' && (
-                  <div className="form-group" style={{ marginTop: 15 }}>
-                    <label className="form-label">Chọn sản phẩm liên kết (để trừ kho)</label>
-                    <select className="form-input" value={form.product_id} onChange={(e) => setForm({...form, product_id: e.target.value})} required>
-                      <option value="">-- Chọn sản phẩm --</option>
-                      {products.map(p => (
-                        <option key={p.id} value={p.id}>{p.name} ({p.code})</option>
-                      ))}
-                    </select>
-                  </div>
-                )}
-
-                <div className="form-group" style={{ marginTop: 15 }}>
-                  <label className="form-label">Giá chuẩn (VNĐ)</label>
-                  <input className="form-input" type="number" value={form.default_price} onChange={(e) => setForm({...form, default_price: Number(e.target.value)})} />
-                </div>
-                <div className="form-group" style={{ marginTop: 15 }}>
-                  <label className="form-label">Mô tả chi tiết</label>
-                  <textarea className="form-input" rows={3} value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} />
-                </div>
-                <div className="form-group" style={{ marginTop: 15 }}>
-                  <label className="form-label">Trạng thái</label>
-                  <select className="form-input" value={form.status} onChange={(e) => setForm({...form, status: e.target.value})}>
-                    <option value="ACTIVE">Hoạt động</option>
-                    <option value="INACTIVE">Tạm dừng</option>
-                  </select>
-                </div>
-              </div>
-              <div className="modal-footer">
-                <button type="button" className="btn btn-outline" onClick={() => setShowModal(false)}>Hủy</button>
-                <button type="submit" className="btn btn-primary">Lưu dịch vụ</button>
-              </div>
-            </form>
-          </div>
-        </div>
+        <ServiceFormModal 
+          editingId={editingId}
+          products={products}
+          initialData={editingData}
+          onClose={() => setShowModal(false)}
+          onSave={handleSave}
+        />
       )}
     </div>
   );

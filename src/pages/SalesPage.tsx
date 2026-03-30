@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, X, ShoppingCart, Trash2, Search } from 'lucide-react';
-import { salesApi, productsApi, type SalesInvoice, type Product } from '../services/api';
-
-const formatPrice = (val: number) =>
-  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
-
-const formatDate = (d: string) =>
-  new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+import { Plus, Eye, X, ShoppingCart, Search } from 'lucide-react';
+import { salesApi, type SalesInvoice } from '../services/api';
+import { formatPrice, formatFullDate } from '../utils/format';
+import { SalesFormModal } from '../components/SalesFormModal';
 
 export const SalesPage: React.FC = () => {
   const [data, setData] = useState<SalesInvoice[]>([]);
@@ -48,12 +44,12 @@ export const SalesPage: React.FC = () => {
     <div>
       <div className="page-header">
         <div className="page-header-left">
-          <h2>Hoa don ban hang</h2>
-          <p>Quan ly hoa don ban — xuat kho theo FIFO</p>
+          <h2>Hóa đơn bán hàng</h2>
+          <p>Quản lý hóa đơn bán — xuất kho theo FIFO</p>
         </div>
         <div className="page-header-actions">
           <button className="btn btn-success" onClick={() => setShowForm(true)}>
-            <Plus size={16} /> Tao hoa don
+            <Plus size={16} /> Tạo hóa đơn
           </button>
         </div>
       </div>
@@ -62,7 +58,7 @@ export const SalesPage: React.FC = () => {
         <div className="data-table-header">
           <div className="search-box">
             <Search size={16} />
-            <input placeholder="Tim ma hoa don..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
+            <input placeholder="Tìm mã hóa đơn..." value={search} onChange={(e) => setSearch(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleSearch()} />
           </div>
         </div>
 
@@ -72,33 +68,33 @@ export const SalesPage: React.FC = () => {
           <table className="data-table">
             <thead>
               <tr>
-                <th>Ma HD</th>
-                <th>Khach hang</th>
-                <th>SDT</th>
-                <th>So SP</th>
-                <th>Tong tien</th>
-                <th>Trang thai</th>
-                <th>Ngay tao</th>
-                <th style={{ textAlign: 'center' }}>Thao tac</th>
+                <th>Mã HD</th>
+                <th>Khách hàng</th>
+                <th>SĐT</th>
+                <th>Số SP</th>
+                <th>Tổng tiền</th>
+                <th>Trạng thái</th>
+                <th>Ngày tạo</th>
+                <th style={{ textAlign: 'center' }}>Thao tác</th>
               </tr>
             </thead>
             <tbody>
               {data.length === 0 ? (
-                <tr><td colSpan={8}><div className="empty-state"><ShoppingCart size={40} /><p>Chua co hoa don</p></div></td></tr>
+                <tr><td colSpan={8}><div className="empty-state"><ShoppingCart size={40} /><p>Chưa có hóa đơn</p></div></td></tr>
               ) : (
                 data.map((item: SalesInvoice) => (
                   <tr key={item.id}>
                     <td><span className="cell-main">{item.code}</span></td>
-                    <td>{item.customer_name || 'Khach le'}</td>
+                    <td>{item.customer_name || 'Khách lẻ'}</td>
                     <td>{item.customer_phone || '-'}</td>
                     <td style={{ textAlign: 'center' }}>{item.items?.length || 0}</td>
                     <td><span className="price highlight">{formatPrice(item.total_amount)}</span></td>
                     <td>
-                      <span className={`badge ${item.status === 'CONFIRMED' ? 'badge-success' : item.status === 'CANCELLED' ? 'badge-danger' : 'badge-warning'}`}>
-                        {item.status}
+                      <span className={`badge ${item.status === 'COMPLETED' || item.status === 'CONFIRMED' ? 'badge-success' : item.status === 'CANCELLED' ? 'badge-danger' : 'badge-warning'}`}>
+                        {item.status === 'COMPLETED' ? 'Đã hoàn thành' : (item.status === 'CONFIRMED' ? 'Đã xác nhận' : (item.status === 'CANCELLED' ? 'Đã hủy' : item.status))}
                       </span>
                     </td>
-                    <td>{formatDate(item.created_at)}</td>
+                    <td>{formatFullDate(item.created_at)}</td>
                     <td>
                       <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
                         <button className="btn btn-ghost btn-icon" onClick={() => setViewItem(item)}><Eye size={15} /></button>
@@ -129,19 +125,19 @@ export const SalesPage: React.FC = () => {
         <div className="modal-overlay" onClick={() => setViewItem(null)}>
           <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3>Chi tiet hoa don - {viewItem.code}</h3>
+              <h3>Chi tiết hóa đơn - {viewItem.code}</h3>
               <button className="btn btn-ghost btn-icon" onClick={() => setViewItem(null)}><X size={18} /></button>
             </div>
             <div className="modal-body">
               <div className="form-grid" style={{ marginBottom: 20 }}>
-                <div><label className="form-label">Ma HD</label><p>{viewItem.code}</p></div>
-                <div><label className="form-label">Khach hang</label><p>{viewItem.customer_name || 'Khach le'}</p></div>
-                <div><label className="form-label">SDT</label><p>{viewItem.customer_phone || '-'}</p></div>
-                <div><label className="form-label">Tong tien</label><p className="price highlight">{formatPrice(viewItem.total_amount)}</p></div>
+                <div><label className="form-label">Mã HD</label><p>{viewItem.id}</p></div>
+                <div><label className="form-label">Khách hàng</label><p>{viewItem.customer_name || 'Khách lẻ'}</p></div>
+                <div><label className="form-label">SĐT</label><p>{viewItem.customer_phone || '-'}</p></div>
+                <div><label className="form-label">Tổng tiền</label><p className="price highlight">{formatPrice(viewItem.total_amount)}</p></div>
               </div>
               <table className="data-table">
                 <thead>
-                  <tr><th>#</th><th>San pham</th><th>SL</th><th>Don gia</th><th>Thanh tien</th></tr>
+                  <tr><th>#</th><th>Sản phẩm</th><th>SL</th><th>Đơn giá</th><th>Thành tiền</th></tr>
                 </thead>
                 <tbody>
                   {viewItem.items?.map((it: any, idx: number) => (
@@ -161,117 +157,6 @@ export const SalesPage: React.FC = () => {
       )}
 
       {showForm && <SalesFormModal onClose={() => setShowForm(false)} onSave={handleCreate} />}
-    </div>
-  );
-};
-
-const SalesFormModal: React.FC<{ onClose: () => void; onSave: (data: any) => void }> = ({ onClose, onSave }) => {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [form, setForm] = useState({
-    code: `HD${Date.now().toString().slice(-6)}`,
-    customer_name: '',
-    customer_phone: '',
-    note: '',
-  });
-  const [items, setItems] = useState<Array<{ product_id: string; quantity: number; price: number }>>([
-    { product_id: '', quantity: 1, price: 0 },
-  ]);
-
-  useEffect(() => {
-    productsApi.getAll({ limit: 100 }).then((r: any) => setProducts(r.data)).catch(() => {});
-  }, []);
-
-  const addItem = () => setItems([...items, { product_id: '', quantity: 1, price: 0 }]);
-  const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx));
-  const updateItem = (idx: number, field: string, value: any) => {
-    const updated = [...items];
-    (updated[idx] as any)[field] = value;
-    if (field === 'product_id') {
-      const product = products.find((p) => p.id === value);
-      if (product) updated[idx].price = product.price;
-    }
-    setItems(updated);
-  };
-
-  const totalAmount = items.reduce((s, it) => s + it.quantity * it.price, 0);
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const valid = items.filter((it) => it.product_id && it.quantity > 0);
-    if (!valid.length) { alert('Add at least 1 product'); return; }
-    onSave({
-      ...form,
-      items: valid.map((it) => ({ product_id: it.product_id, quantity: it.quantity, price: it.price })),
-    });
-  };
-
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Tao hoa don ban hang</h3>
-          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
-        </div>
-        <form onSubmit={handleSubmit}>
-          <div className="modal-body">
-            <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Ma HD</label>
-                <input className="form-input" value={form.code} onChange={(e) => setForm({ ...form, code: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Khach hang</label>
-                <input className="form-input" value={form.customer_name} onChange={(e) => setForm({ ...form, customer_name: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">SDT</label>
-                <input className="form-input" value={form.customer_phone} onChange={(e) => setForm({ ...form, customer_phone: e.target.value })} />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Ghi chu</label>
-                <input className="form-input" value={form.note} onChange={(e) => setForm({ ...form, note: e.target.value })} />
-              </div>
-            </div>
-            <h4 style={{ margin: '20px 0 12px' }}>San pham ban</h4>
-            {items.map((item, idx) => (
-              <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10, alignItems: 'flex-end' }}>
-                <div style={{ flex: 3 }}>
-                  {idx === 0 && <label className="form-label">San pham</label>}
-                  <select className="form-input" value={item.product_id} onChange={(e) => updateItem(idx, 'product_id', e.target.value)}>
-                    <option value="">-- Chon SP --</option>
-                    {products.map((p) => <option key={p.id} value={p.id}>{p.code} - {p.name}</option>)}
-                  </select>
-                </div>
-                <div style={{ flex: 1 }}>
-                  {idx === 0 && <label className="form-label">SL</label>}
-                  <input className="form-input" type="number" min={1} value={item.quantity} onChange={(e) => updateItem(idx, 'quantity', Number(e.target.value))} />
-                </div>
-                <div style={{ flex: 2 }}>
-                  {idx === 0 && <label className="form-label">Don gia</label>}
-                  <input className="form-input" type="number" min={0} value={item.price} onChange={(e) => updateItem(idx, 'price', Number(e.target.value))} />
-                </div>
-                <div style={{ flex: 1.5, textAlign: 'right' }}>
-                  {idx === 0 && <label className="form-label">Thanh tien</label>}
-                  <div className="price" style={{ padding: '10px 0' }}>{formatPrice(item.quantity * item.price)}</div>
-                </div>
-                <button type="button" className="btn btn-ghost btn-icon" onClick={() => removeItem(idx)} style={{ color: 'var(--danger)' }}>
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
-            <button type="button" className="btn btn-outline btn-sm" onClick={addItem} style={{ marginTop: 4 }}>
-              <Plus size={14} /> Them dong
-            </button>
-            <div style={{ textAlign: 'right', marginTop: 20, fontSize: 16, fontWeight: 700, color: 'var(--success)' }}>
-              Tong cong: {formatPrice(totalAmount)}
-            </div>
-          </div>
-          <div className="modal-footer">
-            <button type="button" className="btn btn-outline" onClick={onClose}>Huy</button>
-            <button type="submit" className="btn btn-success">Xac nhan ban</button>
-          </div>
-        </form>
-      </div>
     </div>
   );
 };

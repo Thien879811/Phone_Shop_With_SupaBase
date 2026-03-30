@@ -195,12 +195,29 @@ export const importsApi = {
 
       const { data, count, error } = await supabase
         .from('import_receipts')
-        .select('*, supplier:suppliers(*)', { count: 'exact' })
+        .select(`
+          *, 
+          supplier:suppliers(*),
+          items:stocks(
+            *,
+            product:products(name)
+          )
+        `, { count: 'exact' })
         .range(from, to)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return { data: data || [], total: count || 0 };
+
+      const mapped = (data || []).map((item: any) => ({
+        ...item,
+        items: (item.items || []).map((it: any) => ({
+          ...it,
+          product_name: it.product?.name,
+          import_price: it.unit_cost // map unit_cost to import_price for UI
+        }))
+      }));
+
+      return { data: mapped, total: count || 0 };
     } catch (error) {
       throw wrapError(error);
     }
@@ -209,11 +226,28 @@ export const importsApi = {
     try {
       const { data, error } = await supabase
         .from('import_receipts')
-        .select('*, supplier:suppliers(*), items:stocks(*)')
+        .select(`
+          *, 
+          supplier:suppliers(*), 
+          items:stocks(
+            *,
+            product:products(name)
+          )
+        `)
         .eq('id', id)
         .single();
       if (error) throw error;
-      return data;
+
+      const mapped = {
+        ...data,
+        items: (data.items || []).map((it: any) => ({
+          ...it,
+          product_name: it.product?.name,
+          import_price: it.unit_cost
+        }))
+      };
+
+      return mapped;
     } catch (error) {
       throw wrapError(error);
     }
@@ -357,12 +391,27 @@ export const salesApi = {
 
       const { data, count, error } = await supabase
         .from('sales_invoices')
-        .select('*', { count: 'exact' })
+        .select(`
+          *,
+          items:sales_items(
+            *,
+            product:products(name)
+          )
+        `, { count: 'exact' })
         .range(from, to)
         .order('created_at', { ascending: false });
       
       if (error) throw error;
-      return { data: data || [], total: count || 0 };
+      
+      const mapped = (data || []).map((item: any) => ({
+        ...item,
+        items: (item.items || []).map((it: any) => ({
+          ...it,
+          product_name: it.product?.name
+        }))
+      }));
+
+      return { data: mapped, total: count || 0 };
     } catch (error) {
       throw wrapError(error);
     }
@@ -673,7 +722,7 @@ export const repairsApi = {
   },
   complete: async (id: any) => {
     try {
-      const { data, error } = await supabase.from('repairs').update({ status: 'COMPLETED' }).eq('id', id).select().single();
+      const { data, error } = await supabase.rpc('complete_repair', { p_repair_id: id });
       if (error) throw error;
       return data;
     } catch (error) {
@@ -682,7 +731,7 @@ export const repairsApi = {
   },
   quickImport: async (data: any) => {
     try {
-      const { data: result, error } = await supabase.rpc('quick_import_repair', { data_json: data });
+      const { data: result, error } = await supabase.rpc('quick_import_repair', { import_json: data });
       if (error) throw error;
       return result;
     } catch (error) {
