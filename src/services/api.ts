@@ -371,11 +371,27 @@ export const salesApi = {
     try {
       const { data, error } = await supabase
         .from('sales_invoices')
-        .select('*, items:sales_invoice_items(*)')
+        .select(`
+          *,
+          items:sales_items(
+            *,
+            product:products(name)
+          )
+        `)
         .eq('id', id)
         .single();
       if (error) throw error;
-      return data;
+      
+      // Flatten product name for UI if needed
+      const mapped = {
+        ...data,
+        items: (data.items || []).map((it: any) => ({
+          ...it,
+          product_name: it.product?.name
+        }))
+      };
+      
+      return mapped;
     } catch (error) {
       throw wrapError(error);
     }
@@ -548,11 +564,29 @@ export const repairsApi = {
 
       const { data, count, error } = await supabase
         .from('repairs')
-        .select('*, items:repair_items(*)', { count: 'exact' })
+        .select(`
+          *,
+          items:repair_items(
+            *,
+            service:repair_services(name, service_type)
+          )
+        `, { count: 'exact' })
         .range(from, to)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return { data: data || [], total: count || 0 };
+
+      // Map to flatten service details if the UI expects it.
+      // Based on RepairsPage.tsx line 482, it expects it.service_name
+      const mapped = (data || []).map(r => ({
+        ...r,
+        items: (r.items || []).map((it: any) => ({
+          ...it,
+          service_name: it.service?.name,
+          service_type: it.service?.service_type
+        }))
+      }));
+
+      return { data: mapped, total: count || 0 };
     } catch (error) {
       throw wrapError(error);
     }
@@ -561,11 +595,28 @@ export const repairsApi = {
     try {
       const { data, error } = await supabase
         .from('repairs')
-        .select('*, items:repair_items(*)')
+        .select(`
+          *,
+          items:repair_items(
+            *,
+            service:repair_services(name, service_type)
+          ),
+          logs:repair_logs(*)
+        `)
         .eq('id', id)
         .single();
       if (error) throw error;
-      return data;
+
+      const mapped = {
+        ...data,
+        items: (data.items || []).map((it: any) => ({
+          ...it,
+          service_name: it.service?.name,
+          service_type: it.service?.service_type
+        }))
+      };
+
+      return mapped;
     } catch (error) {
       throw wrapError(error);
     }
@@ -590,7 +641,12 @@ export const repairsApi = {
   },
   addService: async (id: any, data: any) => {
     try {
-      const { data: result, error } = await supabase.from('repair_items').insert([{ ...data, repair_id: id }]).select().single();
+      const payload = {
+        ...data,
+        repair_id: id,
+        total: data.total || (data.quantity * data.price)
+      };
+      const { data: result, error } = await supabase.from('repair_items').insert([payload]).select().single();
       if (error) throw error;
       return result;
     } catch (error) {
@@ -780,7 +836,11 @@ export const socialPostsApi = {
 
       const { data, count, error } = await supabase
         .from('social_posts')
-        .select('*, images:post_images(*), platforms:post_platform_status(*, account:social_accounts(*))', { count: 'exact' })
+        .select(`
+          *,
+          platforms:post_platform_status(*, account:social_accounts(*)),
+          images:post_images(*)
+        `, { count: 'exact' })
         .range(from, to)
         .order('created_at', { ascending: false });
       if (error) throw error;
@@ -793,7 +853,11 @@ export const socialPostsApi = {
     try {
       const { data, error } = await supabase
         .from('social_posts')
-        .select('*, images:post_images(*), platforms:post_platform_status(*, account:social_accounts(*))')
+        .select(`
+          *,
+          platforms:post_platform_status(*, account:social_accounts(*)),
+          images:post_images(*)
+        `)
         .eq('id', id)
         .single();
       if (error) throw error;

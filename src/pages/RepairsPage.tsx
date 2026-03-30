@@ -390,7 +390,7 @@ const RepairDetailModal: React.FC<{
             <div style={{ display: 'flex', gap: 6 }}>
               {order.status === 'RECEIVED' && <button className="btn btn-sm btn-outline" onClick={() => onStatusUpdate(order.id, 'CHECKING')}>Bắt đầu kiểm tra</button>}
               {['CHECKING', 'WAITING_PART'].includes(order.status) && <button className="btn btn-sm btn-primary" onClick={() => onStatusUpdate(order.id, 'REPAIRING')}>Bắt đầu sửa</button>}
-              {order.status === 'REPAIRING' && (
+              {['CHECKING', 'WAITING_PART', 'REPAIRING'].includes(order.status) && (
                 <button className="btn btn-sm btn-success" onClick={() => {
                    if (window.confirm('Xác nhận hoàn thành sửa chữa? Hệ thống sẽ tạo hóa đơn và trừ kho linh kiện.')) {
                      onCreateInvoice(order.id);
