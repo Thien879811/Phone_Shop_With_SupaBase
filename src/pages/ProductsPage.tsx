@@ -44,6 +44,7 @@ export const ProductsPage: React.FC = () => {
   };
 
   const handleSave = async (formData: Partial<Product>) => {
+    console.log('Saving product payload:', formData);
     try {
       if (editItem) {
         await productsApi.update(editItem.id, formData);
@@ -54,6 +55,7 @@ export const ProductsPage: React.FC = () => {
       setEditItem(null);
       loadData();
     } catch (err: any) {
+      console.error('Save error:', err);
       alert(err.response?.data?.message || 'Lỗi lưu sản phẩm');
     }
   };
@@ -212,6 +214,7 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onClose, o
 
   const [form, setForm] = useState({
     code: product?.code || '',
+    sku: product?.sku || '', // Added sku
     name: product?.name || '',
     category_id: product?.category_id || undefined,
     brand_id: product?.brand_id || undefined,
@@ -252,10 +255,14 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onClose, o
         <form onSubmit={handleSubmit}>
           <div className="modal-body">
             <div className="form-grid">
-              <div className="form-group">
-                <label className="form-label">Mã sản phẩm</label>
-                <input className="form-input" value={form.code} onChange={(e) => handleChange('code', e.target.value)} placeholder="Để trống để tự động sinh mã" />
-              </div>
+               <div className="form-group">
+                 <label className="form-label">Mã sản phẩm</label>
+                 <input className="form-input" value={form.code} onChange={(e) => handleChange('code', e.target.value)} placeholder="Để trống để tự động sinh mã" />
+               </div>
+               <div className="form-group">
+                 <label className="form-label">SKU *</label>
+                 <input className="form-input" value={form.sku} onChange={(e) => handleChange('sku', e.target.value)} placeholder="VD: IP15PM-BLK" required />
+               </div>
               <div className="form-group">
                 <label className="form-label">Tên sản phẩm *</label>
                 <input className="form-input" value={form.name} onChange={(e) => handleChange('name', e.target.value)} placeholder="VD: iPhone 15 Pro Max" />

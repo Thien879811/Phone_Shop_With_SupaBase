@@ -11,11 +11,13 @@ const wrapError = (err: any) => {
 export interface Product {
   id: any;
   code: string;
+  sku: string; // Added sku as it is mandatory in DB
   name: string;
   category?: string;
   brand?: string;
   category_id?: any;
   brand_id?: any;
+  category_id_backup?: any; // To track issues if any
   categoryRel?: Category;
   brandRel?: Brand;
   unit: string;
