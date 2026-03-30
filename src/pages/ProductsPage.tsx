@@ -1,0 +1,312 @@
+import React, { useState, useEffect } from 'react';
+import { Plus, Search, Pencil, Trash2, Eye, X } from 'lucide-react';
+import { productsApi, categoriesApi, brandsApi, type Product, type Category, type Brand } from '../services/api';
+
+const formatPrice = (val: number) =>
+  new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
+
+export const ProductsPage: React.FC = () => {
+  const [data, setData] = useState<Product[]>([]);
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState<Product | null>(null);
+  const [viewItem, setViewItem] = useState<Product | null>(null);
+  const limit = 15;
+
+  useEffect(() => { loadData(); }, [page]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      const res = await productsApi.getAll({ page, limit, search });
+      setData(res.data);
+      setTotal(res.total);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSearch = () => { setPage(1); loadData(); };
+
+  const handleDelete = async (item: Product) => {
+    if (!confirm(`Xóa sản phẩm "${item.name}"?`)) return;
+    try {
+      await productsApi.delete(item.id);
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Lỗi xóa sản phẩm');
+    }
+  };
+
+  const handleSave = async (formData: Partial<Product>) => {
+    try {
+      if (editItem) {
+        await productsApi.update(editItem.id, formData);
+      } else {
+        await productsApi.create(formData);
+      }
+      setShowForm(false);
+      setEditItem(null);
+      loadData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Lỗi lưu sản phẩm');
+    }
+  };
+
+  const totalPages = Math.ceil(total / limit);
+
+  return (
+    <div>
+      <div className="page-header">
+        <div className="page-header-left">
+          <h2>Sản phẩm</h2>
+          <p>Quản lý danh mục sản phẩm cửa hàng</p>
+        </div>
+        <div className="page-header-actions">
+          <button className="btn btn-primary" onClick={() => { setEditItem(null); setShowForm(true); }}>
+            <Plus size={16} /> Thêm sản phẩm
+          </button>
+        </div>
+      </div>
+
+      <div className="data-table-wrapper">
+        <div className="data-table-header">
+          <div className="search-box">
+            <Search size={16} />
+            <input
+              placeholder="Tìm theo tên sản phẩm..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+          </div>
+          <div className="data-table-filters">
+            <button className="btn btn-outline btn-sm" onClick={handleSearch}>Tìm kiếm</button>
+          </div>
+        </div>
+
+        {loading ? (
+          <div className="loading-overlay"><div className="loading-spinner" /></div>
+        ) : (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Mã SP</th>
+                <th>Tên sản phẩm</th>
+                <th>Danh mục</th>
+                <th>Thương hiệu</th>
+                <th>Giá bán</th>
+                <th>Tồn thực tế</th>
+                <th>Trạng thái</th>
+                <th style={{ textAlign: 'center' }}>Thao tác</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.length === 0 ? (
+                <tr>
+                  <td colSpan={8}>
+                    <div className="empty-state">
+                      <p>Chưa có sản phẩm nào</p>
+                    </div>
+                  </td>
+                </tr>
+              ) : (
+                data.map((item) => (
+                  <tr key={item.id}>
+                    <td><span className="cell-main">{item.code}</span></td>
+                    <td>
+                      <span className="cell-main">{item.name}</span>
+                      {item.barcode && <div className="cell-sub">Barcode: {item.barcode}</div>}
+                    </td>
+                    <td>{item.categoryRel?.name || item.category || '—'}</td>
+                    <td>{item.brandRel?.name || item.brand || '—'}</td>
+                    <td><span className="price">{formatPrice(item.sellPrice)}</span></td>
+                    <td style={{ textAlign: 'center' }}>{item.minStock}</td>
+                    <td>
+                      <span className={`badge ${item.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>
+                        {item.status}
+                      </span>
+                    </td>
+                    <td>
+                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                        <button className="btn btn-ghost btn-icon" title="Xem" onClick={() => setViewItem(item)}>
+                          <Eye size={15} />
+                        </button>
+                        <button className="btn btn-ghost btn-icon" title="Sửa" onClick={() => { setEditItem(item); setShowForm(true); }}>
+                          <Pencil size={15} />
+                        </button>
+                        <button className="btn btn-ghost btn-icon" title="Xóa" onClick={() => handleDelete(item)} style={{ color: 'var(--danger)' }}>
+                          <Trash2 size={15} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        )}
+
+        {totalPages > 1 && (
+          <div className="table-pagination">
+            <span>Hiển thị {(page - 1) * limit + 1}–{Math.min(page * limit, total)} / {total}</span>
+            <div className="pagination-btns">
+              <button disabled={page <= 1} onClick={() => setPage(page - 1)}>‹</button>
+              {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => i + 1).map((p) => (
+                <button key={p} className={p === page ? 'active' : ''} onClick={() => setPage(p)}>{p}</button>
+              ))}
+              <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>›</button>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {showForm && (
+        <ProductFormModal
+          product={editItem}
+          onClose={() => { setShowForm(false); setEditItem(null); }}
+          onSave={handleSave}
+        />
+      )}
+
+      {viewItem && (
+        <div className="modal-overlay" onClick={() => setViewItem(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>Chi tiết sản phẩm</h3>
+              <button className="btn btn-ghost btn-icon" onClick={() => setViewItem(null)}><X size={18} /></button>
+            </div>
+            <div className="modal-body">
+              <div className="form-grid">
+                <div><label className="form-label">Mã SP</label><p>{viewItem.code}</p></div>
+                <div><label className="form-label">Tên</label><p>{viewItem.name}</p></div>
+                <div><label className="form-label">Danh mục</label><p>{viewItem.categoryRel?.name || viewItem.category || '—'}</p></div>
+                <div><label className="form-label">Thương hiệu</label><p>{viewItem.brandRel?.name || viewItem.brand || '—'}</p></div>
+                <div><label className="form-label">Đơn vị</label><p>{viewItem.unit || '—'}</p></div>
+                <div><label className="form-label">Giá bán</label><p className="price">{formatPrice(viewItem.sellPrice)}</p></div>
+                <div><label className="form-label">Tồn tối thiểu</label><p>{viewItem.minStock}</p></div>
+                <div><label className="form-label">Trạng thái</label><span className={`badge ${viewItem.status === 'ACTIVE' ? 'badge-success' : 'badge-muted'}`}>{viewItem.status}</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+interface ProductFormModalProps {
+  product: Product | null;
+  onClose: () => void;
+  onSave: (data: Partial<Product>) => void;
+}
+
+const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onClose, onSave }) => {
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [brands, setBrands] = useState<Brand[]>([]);
+
+  const [form, setForm] = useState({
+    code: product?.code || '',
+    name: product?.name || '',
+    categoryId: product?.categoryId || undefined,
+    brandId: product?.brandId || undefined,
+    unit: product?.unit || 'Cái',
+    barcode: product?.barcode || '',
+    sellPrice: product?.sellPrice || 0,
+    minStock: product?.minStock || 0,
+    status: product?.status || 'ACTIVE',
+  });
+
+  useEffect(() => {
+    categoriesApi.getAll().then(setCategories).catch(console.error);
+    brandsApi.getAll().then(setBrands).catch(console.error);
+  }, []);
+
+  const handleChange = (field: string, value: any) => {
+    setForm({ ...form, [field]: value });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) {
+      alert('Vui lòng nhập Tên sản phẩm');
+      return;
+    }
+    // If not creating NEW product, code should be checked if needed, 
+    // but backend handles empty code for new ones anyway.
+    onSave(form);
+  };
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-header">
+          <h3>{product ? 'Sửa sản phẩm' : 'Thêm sản phẩm mới'}</h3>
+          <button className="btn btn-ghost btn-icon" onClick={onClose}><X size={18} /></button>
+        </div>
+        <form onSubmit={handleSubmit}>
+          <div className="modal-body">
+            <div className="form-grid">
+              <div className="form-group">
+                <label className="form-label">Mã sản phẩm</label>
+                <input className="form-input" value={form.code} onChange={(e) => handleChange('code', e.target.value)} placeholder="Để trống để tự động sinh mã" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Tên sản phẩm *</label>
+                <input className="form-input" value={form.name} onChange={(e) => handleChange('name', e.target.value)} placeholder="VD: iPhone 15 Pro Max" />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Danh mục</label>
+                <select className="form-input" value={form.categoryId} onChange={(e) => handleChange('categoryId', e.target.value ? Number(e.target.value) : undefined)}>
+                  <option value="">-- Chọn danh mục --</option>
+                  {categories.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Thương hiệu</label>
+                <select className="form-input" value={form.brandId} onChange={(e) => handleChange('brandId', e.target.value ? Number(e.target.value) : undefined)}>
+                  <option value="">-- Chọn nhãn hàng --</option>
+                  {brands.map((b) => <option key={b.id} value={b.id}>{b.name}</option>)}
+                </select>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Đơn vị</label>
+                <input className="form-input" value={form.unit} onChange={(e) => handleChange('unit', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Barcode</label>
+                <input className="form-input" value={form.barcode} onChange={(e) => handleChange('barcode', e.target.value)} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Giá bán (VNĐ)</label>
+                <input className="form-input" type="number" value={form.sellPrice} onChange={(e) => handleChange('sellPrice', Number(e.target.value))} />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Tồn tối thiểu</label>
+                <input className="form-input" type="number" value={form.minStock} onChange={(e) => handleChange('minStock', Number(e.target.value))} />
+              </div>
+              <div className="form-group form-full">
+                <label className="form-label">Trạng thái</label>
+                <select className="form-input" value={form.status} onChange={(e) => handleChange('status', e.target.value)}>
+                  <option value="ACTIVE">Đang bán</option>
+                  <option value="INACTIVE">Ngưng bán</option>
+                </select>
+              </div>
+            </div>
+          </div>
+          <div className="modal-footer">
+            <button type="button" className="btn btn-outline" onClick={onClose}>Hủy</button>
+            <button type="submit" className="btn btn-primary">Lưu</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+};
+
+export default ProductsPage;
