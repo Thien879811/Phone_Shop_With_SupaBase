@@ -15,7 +15,9 @@ import {
   ShieldCheck,
   Globe,
   Send,
+  LogIn,
 } from 'lucide-react';
+import { useAuthStore } from '../store/useAuthStore';
 
 const navItems = [
   {
@@ -65,6 +67,7 @@ const navItems = [
 ];
 
 export const Sidebar: React.FC = () => {
+  const { signOut } = useAuthStore();
   return (
     <aside className="sidebar">
       <div className="sidebar-brand">
@@ -94,6 +97,13 @@ export const Sidebar: React.FC = () => {
           </div>
         ))}
       </nav>
+
+      <div className="sidebar-footer">
+        <button className="btn-logout" onClick={() => signOut()}>
+          <LogIn size={18} style={{ transform: 'rotate(180deg)' }} />
+          <span>Đăng xuất</span>
+        </button>
+      </div>
     </aside>
   );
 };
