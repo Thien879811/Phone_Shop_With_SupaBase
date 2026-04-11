@@ -688,6 +688,15 @@ export const repairsApi = {
       throw wrapError(error);
     }
   },
+  delete: async (id: any) => {
+    try {
+      const { error } = await supabase.from('repairs').delete().eq('id', id);
+      if (error) throw error;
+      return { success: true };
+    } catch (error) {
+      throw wrapError(error);
+    }
+  },
   addService: async (id: any, data: any) => {
     try {
       const payload = {

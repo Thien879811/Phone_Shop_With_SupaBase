@@ -35,8 +35,8 @@ export const BrandsPage: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!confirm('Xóa thương hiệu này?')) return;
     try {
-       await brandsApi.delete(id);
-       loadData();
+      await brandsApi.delete(id);
+      loadData();
     } catch (err: any) { alert('Không thể xóa vì đã có sản phẩm thuộc thương hiệu này.'); }
   };
 
@@ -93,10 +93,10 @@ export const BrandsPage: React.FC = () => {
       </div>
 
       {showForm && (
-        <BrandFormModal 
-          item={editItem} 
-          onClose={() => setShowForm(false)} 
-          onSave={handleSave} 
+        <BrandFormModal
+          item={editItem}
+          onClose={() => setShowForm(false)}
+          onSave={handleSave}
         />
       )}
     </div>
@@ -121,15 +121,15 @@ const BrandFormModal: React.FC<{ item: Brand | null; onClose: () => void; onSave
           <div className="modal-body">
             <div className="form-group">
               <label className="form-label">Tên nhãn hàng *</label>
-              <input className="form-input" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} required />
+              <input className="form-input" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required />
             </div>
             <div className="form-group">
               <label className="form-label">Xuất xứ</label>
-              <input className="form-input" value={form.origin} onChange={(e) => setForm({...form, origin: e.target.value})} placeholder="VD: USA, Vietnam, China..." />
+              <input className="form-input" value={form.origin} onChange={(e) => setForm({ ...form, origin: e.target.value })} placeholder="VD: USA, Vietnam, China..." />
             </div>
             <div className="form-group">
               <label className="form-label">Mô tả</label>
-              <textarea className="form-input" value={form.description} onChange={(e) => setForm({...form, description: e.target.value})} rows={3} />
+              <textarea className="form-input" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} rows={3} />
             </div>
           </div>
           <div className="modal-footer">

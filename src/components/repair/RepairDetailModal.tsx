@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, CreditCard } from 'lucide-react';
-import { repairsApi, stocksApi, type RepairOrder, type RepairService } from '../../services/api';
+import { repairsApi, stocksApi, productsApi, type RepairOrder, type RepairService } from '../../services/api';
 import { formatPrice, formatFullDate } from '../../utils/format';
 import { REPAIR_STATUS_MAP } from '../../constants/repair';
 
@@ -10,48 +10,69 @@ interface RepairDetailModalProps {
   onStatusUpdate: (id: any, status: string, note?: string) => void;
   onShowQuickImport: (product_id: string, repair_order_id: string) => void;
   onCreateInvoice: (id: any) => void;
+  onDelete: (id: any) => void;
 }
 
 export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({ 
-  order, onClose, onStatusUpdate, onShowQuickImport, onCreateInvoice 
+  order, onClose, onStatusUpdate, onShowQuickImport, onCreateInvoice, onDelete
 }) => {
   const [activeTab, setActiveTab] = useState<'items' | 'logs'>('items');
   const [services, setServices] = useState<RepairService[]>([]);
-  //const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [stocks, setStocks] = useState<any[]>([]);
   
   const [showAddItem, setShowAddItem] = useState(false);
+  const [addMode, setAddMode] = useState<'service' | 'product'>('service');
   const [newItem, setNewItem] = useState({ item_id: '', quantity: 1, price: 0 });
 
   useEffect(() => {
     repairsApi.getAllServices().then(setServices);
-   // productsApi.getAll({ limit: 200 }).then(r => setProducts(r.data));
-    stocksApi.getSummary({ limit: 200 }).then(r => setStocks(r.data));
+    productsApi.getAll({ limit: 500 }).then(r => setProducts(r.data));
+    stocksApi.getSummary({ limit: 500 }).then(r => setStocks(r || []));
   }, []);
 
   const handleAddItem = async () => {
     if (!newItem.item_id) { alert('Vui lòng chọn dịch vụ'); return; }
     
     try {
-      const service = services.find(s => s.id === newItem.item_id);
-      if (!service) return;
+      let payload: any;
+      
+      if (addMode === 'service') {
+        const service = services.find(s => s.id === newItem.item_id);
+        if (!service) return;
+        payload = {
+          service_id: service.id,
+          quantity: newItem.quantity,
+          price: newItem.price,
+          product_id: service.service_type === 'REPLACEMENT' ? (service.product_id || newItem.item_id) : null
+        };
+      } else {
+        const prod = products.find(p => p.id === newItem.item_id);
+        if (!prod) return;
+        payload = {
+          service_id: null,
+          product_id: prod.id,
+          quantity: newItem.quantity,
+          price: newItem.price
+        };
+      }
 
-      const payload: any = {
-        service_id: service.id,
-        quantity: newItem.quantity,
-        price: newItem.price,
-        product_id: service.service_type === 'REPLACEMENT' ? (service.product_id || newItem.item_id) : null
-      };
       await repairsApi.addService(order.id, payload);
       setShowAddItem(false);
       setNewItem({ item_id: '', quantity: 1, price: 0 });
       onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || '';
-      if (msg.includes('Không đủ linh kiện')) {
-        const service = services.find(s => s.id === newItem.item_id);
-        if (service?.product_id && window.confirm(`${msg}. Bạn có muốn nhập kho nhanh không?`)) {
-          onShowQuickImport(service.product_id, order.id);
+      if (msg.includes('Không đủ linh kiện') || msg.includes('Không đủ hàng')) {
+        let pid = '';
+        if (addMode === 'service') {
+          pid = services.find(s => s.id === newItem.item_id)?.product_id;
+        } else {
+          pid = newItem.item_id;
+        }
+        
+        if (pid && window.confirm(`${msg}. Bạn có muốn nhập kho nhanh không?`)) {
+          onShowQuickImport(pid, order.id);
         }
       } else {
         alert(msg || 'Lỗi thêm hạng mục');
@@ -67,10 +88,12 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
     } catch (err) { alert('Lỗi xóa'); }
   };
 
-  const selectedService = newItem.item_id ? services.find(s => s.id === newItem.item_id) : null;
-  const currentStockForSvc = selectedService?.service_type === 'REPLACEMENT' && selectedService.product_id
-    ? stocks.find(s => s.product_id === selectedService.product_id)?.total_remaining || 0
-    : 0;
+  const selectedService = addMode === 'service' && newItem.item_id ? services.find(s => s.id === newItem.item_id) : null;
+  const selectedProduct = addMode === 'product' && newItem.item_id ? products.find(p => p.id === newItem.item_id) : null;
+  
+  const currentStockForSvc = addMode === 'service' 
+    ? (selectedService?.service_type === 'REPLACEMENT' && selectedService.product_id ? stocks.find(s => s.product_id === selectedService.product_id)?.total_remaining || 0 : 0)
+    : (selectedProduct ? stocks.find(s => s.product_id === selectedProduct.id)?.total_remaining || 0 : 0);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -101,7 +124,7 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {order.status === 'RECEIVED' && <button className="btn btn-sm btn-outline" onClick={() => onStatusUpdate(order.id, 'CHECKING')}>Bắt đầu kiểm tra</button>}
             {['CHECKING', 'WAITING_PART'].includes(order.status) && <button className="btn btn-sm btn-primary" onClick={() => onStatusUpdate(order.id, 'REPAIRING')}>Bắt đầu sửa</button>}
-            {['CHECKING', 'WAITING_PART', 'REPAIRING'].includes(order.status) && (
+            {['RECEIVED', 'CHECKING', 'WAITING_PART', 'REPAIRING'].includes(order.status) && (
               <button className="btn btn-sm btn-success" onClick={() => {
                  if (window.confirm('Xác nhận hoàn thành? Hệ thống sẽ tạo hóa đơn và trừ kho.')) {
                    onCreateInvoice(order.id);
@@ -110,9 +133,14 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
                 <CreditCard size={14} /> Hoàn thành & Trả máy
               </button>
             )}
-            <div style={{ marginLeft: 'auto' }}>
+            <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
               {['RECEIVED', 'CHECKING', 'WAITING_PART', 'REPAIRING'].includes(order.status) && (
-                <button className="btn btn-sm btn-danger btn-outline" onClick={() => onStatusUpdate(order.id, 'CANCELLED', prompt('Lý do hủy?') || '')}>Hủy sửa chữa</button>
+                <>
+                  <button className="btn btn-sm btn-danger btn-outline" onClick={() => onStatusUpdate(order.id, 'CANCELLED', prompt('Lý do hủy?') || '')}>Hủy sửa chữa</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => onDelete(order.id)}>
+                    <Trash2 size={14} /> Xóa phiếu
+                  </button>
+                </>
               )}
             </div>
           </div>
@@ -133,22 +161,35 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
 
               {showAddItem && (
                 <div style={{ background: 'var(--bg-secondary)', padding: 15, borderRadius: 8, marginBottom: 15, border: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', gap: 10, marginBottom: 15 }}>
+                    <button className={`btn btn-sm ${addMode === 'service' ? 'btn-primary' : 'btn-outline'}`} onClick={() => {setAddMode('service'); setNewItem({...newItem, item_id: ''});}}>Dịch vụ/Linh kiện</button>
+                    <button className={`btn btn-sm ${addMode === 'product' ? 'btn-primary' : 'btn-outline'}`} onClick={() => {setAddMode('product'); setNewItem({...newItem, item_id: ''});}}>Sản phẩm bán kèm</button>
+                  </div>
+                  
                   <div className="form-grid">
                     <div className="form-group">
-                      <label className="form-label">Chọn dịch vụ</label>
+                      <label className="form-label">{addMode === 'service' ? 'Chọn dịch vụ' : 'Chọn sản phẩm'}</label>
                       <select 
                         className="form-input" 
                         value={newItem.item_id} 
                         onChange={(e) => {
                           const id = e.target.value;
-                          const svc = services.find(s => s.id === id);
-                          setNewItem({...newItem, item_id: e.target.value, price: svc?.default_price || 0});
+                          if (addMode === 'service') {
+                            const svc = services.find(s => s.id === id);
+                            setNewItem({...newItem, item_id: id, price: svc?.default_price || 0});
+                          } else {
+                            const prod = products.find(p => p.id === id);
+                            setNewItem({...newItem, item_id: id, price: prod?.price || 0});
+                          }
                         }}
                       >
-                        <option value="">-- Chọn dịch vụ --</option>
-                        {services.map(s => <option key={s.id} value={s.id}>{s.name} ({s.service_type})</option>)}
+                        <option value="">-- {addMode === 'service' ? 'Chọn dịch vụ' : 'Chọn sản phẩm'} --</option>
+                        {addMode === 'service' 
+                          ? services.map(s => <option key={s.id} value={s.id}>{s.name} ({s.service_type})</option>)
+                          : products.map(p => <option key={p.id} value={p.id}>{p.name} - {p.code}</option>)
+                        }
                       </select>
-                      {selectedService?.service_type === 'REPLACEMENT' && (
+                      {(addMode === 'product' || selectedService?.service_type === 'REPLACEMENT') && (
                         <div style={{ marginTop: 4, fontSize: 12, color: currentStockForSvc <= 0 ? 'var(--danger)' : 'var(--success)' }}>
                           Tồn kho: {currentStockForSvc}
                         </div>
@@ -187,10 +228,13 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
                   ) : (
                     order.items?.map((it) => (
                       <tr key={it.id}>
-                        <td><span className="cell-main">{it.service_name}</span></td>
+                        <td><span className="cell-main">{it.service_name || products.find(p => p.id === it.product_id)?.name || 'Sản phẩm'}</span></td>
                         <td>
-                          <span className={`badge badge-sm ${it.service_type === 'REPLACEMENT' ? 'badge-info' : 'badge-ghost'}`}>
-                            {it.service_type === 'REPLACEMENT' ? 'Linh kiện' : 'Dịch vụ'}
+                          <span className={`badge badge-sm ${
+                            !it.service_id ? 'badge-success' :
+                            it.service_type === 'REPLACEMENT' ? 'badge-info' : 'badge-ghost'
+                          }`}>
+                            {!it.service_id ? 'Bán kèm' : it.service_type === 'REPLACEMENT' ? 'Linh kiện' : 'Dịch vụ'}
                           </span>
                         </td>
                         <td style={{ textAlign: 'center' }}>{it.quantity}</td>
@@ -217,7 +261,7 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
           ) : (
             <div className="tab-content" style={{ flex: 1 }}>
                <div className="timeline">
-                  {order.logs?.sort((a,b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((log: any) => (
+                  {(order.logs || []).slice().sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()).map((log: any) => (
                     <div key={log.id} className="timeline-item">
                       <div className="timeline-marker" />
                       <div className="timeline-content">

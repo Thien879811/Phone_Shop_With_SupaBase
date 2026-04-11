@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Eye, Wrench, Search } from 'lucide-react';
+import { Plus, Eye, Wrench, Search, Trash2 } from 'lucide-react';
 import { repairsApi, type RepairOrder } from '../services/api';
 import { formatPrice, formatFullDate } from '../utils/format';
 import { REPAIR_STATUS_MAP } from '../constants/repair';
@@ -16,7 +16,7 @@ export const RepairsPage: React.FC = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<RepairOrder | null>(null);
   const [showQuickImport, setShowQuickImport] = useState<{ product_id: string; repair_order_id: string } | null>(null);
-  
+
   const limit = 15;
 
   useEffect(() => { loadData(); }, [page]);
@@ -38,7 +38,11 @@ export const RepairsPage: React.FC = () => {
 
   const handleCreate = async (formData: any) => {
     try {
-      await repairsApi.create(formData);
+      const result = await repairsApi.create({ ...formData, status: 'RECEIVED' });
+      // Log initial status
+      if (result?.id) {
+        await repairsApi.update(result.id, { status: 'RECEIVED' });
+      }
       setShowCreateModal(false);
       loadData();
     } catch (err: any) {
@@ -61,12 +65,24 @@ export const RepairsPage: React.FC = () => {
 
   const handleCreateInvoice = async (id: any) => {
     try {
-      await repairsApi.complete(id);
-      alert('Sửa chữa hoàn thành. Hóa đơn đã được tạo!');
+      const result = await repairsApi.complete(id);
+      const invCode = result?.invoice_code || result?.[0]?.invoice_code;
+      alert(`✅ Hoàn thành sửa chữa!\n${invCode ? `Hóa đơn: ${invCode}` : 'Đã tạo hóa đơn.'}\nTổng tiền: ${(result?.total_amount || 0).toLocaleString('vi-VN')}đ`);
       loadData();
       if (selectedOrder?.id === id) setSelectedOrder(null);
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Lỗi hoàn tất sửa chữa');
+      alert(err.response?.data?.message || err.message || 'Lỗi hoàn tất sửa chữa');
+    }
+  };
+
+  const handleDelete = async (id: any) => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa phiếu sửa chữa này?')) return;
+    try {
+      await repairsApi.delete(id);
+      loadData();
+      if (selectedOrder?.id === id) setSelectedOrder(null);
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Lỗi xóa phiếu');
     }
   };
 
@@ -90,11 +106,11 @@ export const RepairsPage: React.FC = () => {
         <div className="data-table-header">
           <div className="search-box">
             <Search size={16} />
-            <input 
-              placeholder="Tìm theo máy, khách hàng hoặc mã phiếu..." 
-              value={search} 
-              onChange={(e) => setSearch(e.target.value)} 
-              onKeyDown={(e) => e.key === 'Enter' && handleSearch()} 
+            <input
+              placeholder="Tìm theo máy, khách hàng hoặc mã phiếu..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
             />
           </div>
         </div>
@@ -145,6 +161,11 @@ export const RepairsPage: React.FC = () => {
                         <button className="btn btn-ghost btn-icon" onClick={() => setSelectedOrder(item)} title="Xem chi tiết">
                           <Eye size={15} />
                         </button>
+                        {!['COMPLETED', 'DELIVERED'].includes(item.status) && (
+                          <button className="btn btn-ghost btn-icon" onClick={() => handleDelete(item.id)} title="Xóa" style={{ color: 'var(--danger)' }}>
+                            <Trash2 size={15} />
+                          </button>
+                        )}
                       </div>
                     </td>
                   </tr>
@@ -169,24 +190,25 @@ export const RepairsPage: React.FC = () => {
       </div>
 
       {showCreateModal && (
-        <RepairFormModal 
-          onClose={() => setShowCreateModal(false)} 
-          onSave={handleCreate} 
+        <RepairFormModal
+          onClose={() => setShowCreateModal(false)}
+          onSave={handleCreate}
         />
       )}
 
       {selectedOrder && (
-        <RepairDetailModal 
-          order={selectedOrder} 
+        <RepairDetailModal
+          order={selectedOrder}
           onClose={() => setSelectedOrder(null)}
           onStatusUpdate={handleStatusUpdate}
           onShowQuickImport={(product_id, repair_order_id) => setShowQuickImport({ product_id, repair_order_id })}
           onCreateInvoice={handleCreateInvoice}
+          onDelete={handleDelete}
         />
       )}
 
       {showQuickImport && (
-        <QuickImportModal 
+        <QuickImportModal
           product_id={showQuickImport.product_id}
           repair_order_id={showQuickImport.repair_order_id}
           onClose={() => setShowQuickImport(null)}
@@ -194,7 +216,7 @@ export const RepairsPage: React.FC = () => {
             setShowQuickImport(null);
             loadData();
             if (selectedOrder) {
-               repairsApi.getById(selectedOrder.id).then(setSelectedOrder);
+              repairsApi.getById(selectedOrder.id).then(setSelectedOrder);
             }
           }}
         />

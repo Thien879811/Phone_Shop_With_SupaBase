@@ -16,11 +16,12 @@ export const StocksPage: React.FC = () => {
     try {
       setLoading(true);
       const res = await stocksApi.getSummary({ page, limit, search });
-      setData(res.data);
-      setTotal(res.total);
+      setData(res);
+      setTotal(res?.length || 0);
     } catch (err) { console.error(err); }
     finally { setLoading(false); }
   };
+
 
   const handleSearch = () => { setPage(1); loadData(); };
   const totalPages = Math.ceil(total / limit);
@@ -59,33 +60,33 @@ export const StocksPage: React.FC = () => {
               </tr>
             </thead>
             <tbody>
-              {data.length === 0 ? (
+              {data?.length === 0 ? (
                 <tr><td colSpan={8}><div className="empty-state"><Warehouse size={40} /><p>Chua co du lieu ton kho</p></div></td></tr>
               ) : (
-                 data.map((item: StockSummary) => (
-                   <tr key={item.product_id}>
-                     <td><span className="cell-main">{item.product_code}</span></td>
-                     <td><span className="cell-main">{item.product_name}</span></td>
-                     <td>{item.category || '-'}</td>
-                     <td>{item.brand || '-'}</td>
-                     <td style={{ textAlign: 'center' }}>{item.total_imported}</td>
-                     <td style={{ textAlign: 'center' }}>
-                       <span style={{ fontWeight: 700, color: item.low_stock ? 'var(--danger)' : 'var(--text-primary)' }}>
-                         {item.total_remaining}
-                       </span>
-                     </td>
-                     <td style={{ textAlign: 'center' }}>{item.min_stock}</td>
-                     <td>
-                       {item.low_stock ? (
-                         <span className="badge badge-danger">
-                           <AlertTriangle size={12} /> Sap het
-                         </span>
-                       ) : (
-                         <span className="badge badge-success">Du hang</span>
-                       )}
-                     </td>
-                   </tr>
-                 ))
+                data?.map((item: StockSummary) => (
+                  <tr key={item.product_id}>
+                    <td><span className="cell-main">{item.product_code}</span></td>
+                    <td><span className="cell-main">{item.product_name}</span></td>
+                    <td>{item.category || '-'}</td>
+                    <td>{item.brand || '-'}</td>
+                    <td style={{ textAlign: 'center' }}>{item.total_imported}</td>
+                    <td style={{ textAlign: 'center' }}>
+                      <span style={{ fontWeight: 700, color: item.low_stock ? 'var(--danger)' : 'var(--text-primary)' }}>
+                        {item.total_remaining}
+                      </span>
+                    </td>
+                    <td style={{ textAlign: 'center' }}>{item.min_stock}</td>
+                    <td>
+                      {item.low_stock ? (
+                        <span className="badge badge-danger">
+                          <AlertTriangle size={12} /> Sap het
+                        </span>
+                      ) : (
+                        <span className="badge badge-success">Du hang</span>
+                      )}
+                    </td>
+                  </tr>
+                ))
               )}
             </tbody>
           </table>

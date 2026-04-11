@@ -35,8 +35,8 @@ export const CategoriesPage: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!confirm('Xóa danh mục này?')) return;
     try {
-       await categoriesApi.delete(id);
-       loadData();
+      await categoriesApi.delete(id);
+      loadData();
     } catch (err: any) { alert('Không thể xóa vì đã có sản phẩm thuộc danh mục này.'); }
   };
 
@@ -93,10 +93,10 @@ export const CategoriesPage: React.FC = () => {
       </div>
 
       {showForm && (
-        <CategoryFormModal 
-          item={editItem} 
-          onClose={() => setShowForm(false)} 
-          onSave={handleSave} 
+        <CategoryFormModal
+          item={editItem}
+          onClose={() => setShowForm(false)}
+          onSave={handleSave}
         />
       )}
     </div>
