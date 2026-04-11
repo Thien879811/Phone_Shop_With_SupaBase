@@ -1,38 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Eye, X, ShoppingCart, Search } from 'lucide-react';
-import { salesApi, type SalesInvoice } from '../services/api';
+import { type SalesInvoice } from '../services/api';
+import { useSales, useCreateSales } from '../hooks/useSales';
 import { formatPrice, formatFullDate } from '../utils/format';
 import { SalesFormModal } from '../components/SalesFormModal';
 
 export const SalesPage: React.FC = () => {
-  const [data, setData] = useState<SalesInvoice[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [viewItem, setViewItem] = useState<SalesInvoice | null>(null);
   const limit = 15;
 
-  useEffect(() => { loadData(); }, [page]);
+  const { data: salesData, isLoading: loading } = useSales({ page, limit, search });
+  const data = salesData?.data || [];
+  const total = salesData?.total || 0;
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await salesApi.getAll({ page, limit, search });
-      setData(res.data);
-      setTotal(res.total);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
+  const createSalesM = useCreateSales();
 
-  const handleSearch = () => { setPage(1); loadData(); };
+  const [showForm, setShowForm] = useState(false);
+  const [viewItem, setViewItem] = useState<SalesInvoice | null>(null);
+
+  const handleSearch = () => { setPage(1); };
 
   const handleCreate = async (formData: any) => {
     try {
-      await salesApi.create(formData);
+      await createSalesM.mutateAsync(formData);
       setShowForm(false);
-      loadData();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Error');
     }

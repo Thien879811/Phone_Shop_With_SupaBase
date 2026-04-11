@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Plus,
   Edit2,
@@ -13,12 +13,22 @@ import {
   Globe,
   MessageCircle,
 } from 'lucide-react';
-import { socialAccountsApi } from '../services/api';
 import type { SocialAccount } from '../services/api';
+import { 
+  useSocialAccounts, 
+  useCreateSocialAccount, 
+  useUpdateSocialAccount, 
+  useDeleteSocialAccount, 
+  useTestSocialConnection 
+} from '../hooks/useSocial';
 
 const SocialAccountsPage: React.FC = () => {
-  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { data: accounts = [], isLoading: loading } = useSocialAccounts();
+  const createAccountM = useCreateSocialAccount();
+  const updateAccountM = useUpdateSocialAccount();
+  const deleteAccountM = useDeleteSocialAccount();
+  const testConnectionM = useTestSocialConnection();
+
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [search, setSearch] = useState('');
@@ -33,32 +43,15 @@ const SocialAccountsPage: React.FC = () => {
     api_url: '',
   });
 
-  const loadAccounts = async () => {
-    setLoading(true);
-    try {
-      const data = await socialAccountsApi.getAll();
-      setAccounts(data);
-    } catch (err) {
-      console.error('Failed to load accounts:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadAccounts();
-  }, []);
-
   const handleSubmit = async () => {
     try {
       if (editId) {
-        await socialAccountsApi.update(editId, form);
+        await updateAccountM.mutateAsync({ id: editId, data: form });
       } else {
-        await socialAccountsApi.create(form);
+        await createAccountM.mutateAsync(form);
       }
       setShowModal(false);
       resetForm();
-      loadAccounts();
     } catch (err) {
       console.error('Failed to save account:', err);
     }
@@ -79,8 +72,7 @@ const SocialAccountsPage: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!confirm('Bạn có chắc muốn xóa tài khoản này?')) return;
     try {
-      await socialAccountsApi.delete(id);
-      loadAccounts();
+      await deleteAccountM.mutateAsync(id);
     } catch (err) {
       console.error('Failed to delete:', err);
     }
@@ -90,7 +82,7 @@ const SocialAccountsPage: React.FC = () => {
     setTestingId(id);
     setTestResult(null);
     try {
-      const result = await socialAccountsApi.testConnection(id);
+      const result = await testConnectionM.mutateAsync(id);
       setTestResult({ id, success: result.success, message: result.success ? 'Kết nối thành công!' : result.message });
     } catch (err: any) {
       setTestResult({ id, success: false, message: err.message || 'Lỗi kết nối' });

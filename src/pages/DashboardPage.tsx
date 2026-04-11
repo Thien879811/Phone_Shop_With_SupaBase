@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import {
   Package, TrendingUp, AlertTriangle, ArrowDownCircle, ArrowUpCircle,
   RotateCcw, Settings, Boxes
 } from 'lucide-react';
-import { stocksApi, type DashboardStats, type StockMovement } from '../services/api';
+import { useDashboard } from '../hooks/useInventory';
+import type { StockMovement } from '../services/api';
 
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -16,24 +17,7 @@ const movementIcons: Record<string, { icon: React.ReactNode; color: string; bg: 
 };
 
 export const DashboardPage: React.FC = () => {
-  const [stats, setStats] = useState<DashboardStats | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const data = await stocksApi.getDashboard();
-      setStats(data);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const { data: stats, isLoading: loading } = useDashboard();
 
   if (loading) {
     return (

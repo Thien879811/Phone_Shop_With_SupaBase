@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
+import { useMutation } from '@tanstack/react-query';
 import {
   Plus,
   Edit2,
@@ -23,11 +24,16 @@ import {
   RotateCcw,
   Repeat,
 } from 'lucide-react';
-import {
-  socialPostsApi,
-  socialAccountsApi,
-} from '../services/api';
-import type { SocialPostItem, SocialAccount } from '../services/api';
+import { type SocialPostItem, socialPostsApi, type PostPlatformStatus } from '../services/api';
+import { 
+  useSocialPosts, 
+  useCreateSocialPost, 
+  useUpdateSocialPost,
+  useDeleteSocialPost, 
+  useSocialPostAction,
+  useSocialAccounts
+} from '../hooks/useSocial';
+import { useQueryClient } from '@tanstack/react-query';
 
 const STATUS_MAP: Record<string, { label: string; badge: string; icon: React.ReactNode }> = {
   DRAFT: { label: 'Nháp', badge: 'badge-muted', icon: <FileText size={12} /> },
@@ -38,13 +44,27 @@ const STATUS_MAP: Record<string, { label: string; badge: string; icon: React.Rea
 };
 
 const SocialPostsPage: React.FC = () => {
-  const [posts, setPosts] = useState<SocialPostItem[]>([]);
-  const [accounts, setAccounts] = useState<SocialAccount[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+  
+  const { data: postsData, isLoading: loading } = useSocialPosts({ 
+    page, 
+    limit: 15, 
+    status: statusFilter || undefined, 
+    search: search || undefined 
+  });
+  const posts = postsData?.data || [];
+  const total = postsData?.total || 0;
+
+  const queryClient = useQueryClient();
+  const { data: accounts = [] } = useSocialAccounts();
+  const createPostM = useCreateSocialPost();
+  const updatePostM = useUpdateSocialPost();
+  const deletePostM = useDeleteSocialPost();
+  const postActionM = useSocialPostAction();
+  const uploadImagesM = useMutation({ mutationFn: (files: File[]) => socialPostsApi.uploadImages(files) });
+
   const [showModal, setShowModal] = useState(false);
   const [editId, setEditId] = useState<number | null>(null);
   const [previewPost, setPreviewPost] = useState<SocialPostItem | null>(null);
@@ -62,36 +82,6 @@ const SocialPostsPage: React.FC = () => {
   });
   const [uploadingImages, setUploadingImages] = useState(false);
 
-  const loadPosts = async () => {
-    setLoading(true);
-    try {
-      const result = await socialPostsApi.getAll({ page, limit: 15, status: statusFilter || undefined, search: search || undefined });
-      setPosts(result.data);
-      setTotal(result.total);
-    } catch (err) {
-      console.error('Failed to load posts:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadAccounts = async () => {
-    try {
-      const data = await socialAccountsApi.getAll();
-      setAccounts(data);
-    } catch (err) {
-      console.error('Failed to load accounts:', err);
-    }
-  };
-
-  useEffect(() => {
-    loadAccounts();
-  }, []);
-
-  useEffect(() => {
-    loadPosts();
-  }, [page, statusFilter, search]);
-
   const handleSubmit = async () => {
     try {
       const payload = {
@@ -99,13 +89,12 @@ const SocialPostsPage: React.FC = () => {
         scheduled_time: form.scheduled_time || undefined,
       };
       if (editId) {
-        await socialPostsApi.update(editId, payload);
+        await updatePostM.mutateAsync({ id: editId, data: payload });
       } else {
-        await socialPostsApi.create(payload);
+        await createPostM.mutateAsync(payload);
       }
       setShowModal(false);
       resetForm();
-      loadPosts();
     } catch (err) {
       console.error('Failed to save post:', err);
     }
@@ -128,8 +117,7 @@ const SocialPostsPage: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!confirm('Bạn có chắc muốn xóa bài đăng này?')) return;
     try {
-      await socialPostsApi.delete(id);
-      loadPosts();
+      await deletePostM.mutateAsync(id);
     } catch (err) {
       console.error('Failed to delete:', err);
     }
@@ -138,8 +126,7 @@ const SocialPostsPage: React.FC = () => {
   const handlePublish = async (id: number) => {
     setActionLoading(id);
     try {
-      await socialPostsApi.publish(id);
-      loadPosts();
+      await postActionM.mutateAsync({ id, action: 'publish' });
     } catch (err) {
       console.error('Failed to publish:', err);
     } finally {
@@ -150,8 +137,7 @@ const SocialPostsPage: React.FC = () => {
   const handleRetry = async (id: number) => {
     setActionLoading(id);
     try {
-      await socialPostsApi.retry(id);
-      loadPosts();
+      await postActionM.mutateAsync({ id, action: 'retry' });
     } catch (err) {
       console.error('Failed to retry:', err);
     } finally {
@@ -163,8 +149,7 @@ const SocialPostsPage: React.FC = () => {
     if (!confirm('Bạn có muốn đăng lại bài viết này ngay bây giờ?')) return;
     setActionLoading(id);
     try {
-      await socialPostsApi.repost(id);
-      loadPosts();
+      await postActionM.mutateAsync({ id, action: 'repost' });
     } catch (err) {
       console.error('Failed to repost:', err);
     } finally {
@@ -177,10 +162,10 @@ const SocialPostsPage: React.FC = () => {
     setUploadingImages(true);
     try {
       const files = Array.from(e.target.files);
-      const result = await socialPostsApi.uploadImages(files);
+      const result = await uploadImagesM.mutateAsync(files);
       setForm((prev) => ({
         ...prev,
-        images: [...prev.images, ...result.map(r => r.imageUrl)],
+        images: [...prev.images, ...result.map((r: any) => r.imageUrl)],
       }));
     } catch (err) {
       console.error('Failed to upload images:', err);
@@ -364,7 +349,7 @@ const SocialPostsPage: React.FC = () => {
                     </td>
                     <td>
                       <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap' }}>
-                        {post.platforms?.map((pp) => (
+                        {post.platforms?.map((pp: PostPlatformStatus) => (
                           <span
                             key={pp.id}
                             className="badge"
@@ -529,7 +514,7 @@ const SocialPostsPage: React.FC = () => {
               <div>
                 <label className="form-label">Trạng thái nền tảng</label>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {previewPost.platforms?.map((pp) => {
+                  {previewPost.platforms?.map((pp: PostPlatformStatus) => {
                     const ppStatus = STATUS_MAP[pp.status] || { label: pp.status, badge: 'badge-muted', icon: null };
                     return (
                       <div
@@ -832,7 +817,7 @@ const SocialPostsPage: React.FC = () => {
                       }
                       setShowModal(false);
                       resetForm();
-                      loadPosts();
+                      queryClient.invalidateQueries({ queryKey: ['socialPosts'] });
                     } catch (err) {
                       console.error('Failed to publish:', err);
                     }

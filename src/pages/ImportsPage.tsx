@@ -1,38 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Eye, X, Package, Search } from 'lucide-react';
-import { importsApi, type ImportReceipt } from '../services/api';
+import { type ImportReceipt } from '../services/api';
+import { useImports, useCreateImport } from '../hooks/useInventory';
 import { formatPrice, formatDate } from '../utils/format';
 import { ImportFormModal } from '../components/ImportFormModal';
 
 export const ImportsPage: React.FC = () => {
-  const [data, setData] = useState<ImportReceipt[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [viewItem, setViewItem] = useState<ImportReceipt | null>(null);
   const limit = 15;
 
-  useEffect(() => { loadData(); }, [page]);
+  const { data: importsData, isLoading: loading } = useImports({ page, limit, search });
+  const data = importsData?.data || [];
+  const total = importsData?.total || 0;
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await importsApi.getAll({ page, limit, search });
-      setData(res.data);
-      setTotal(res.total);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
+  const createImportM = useCreateImport();
 
-  const handleSearch = () => { setPage(1); loadData(); };
+  const [showForm, setShowForm] = useState(false);
+  const [viewItem, setViewItem] = useState<ImportReceipt | null>(null);
+
+  const handleSearch = () => { setPage(1); };
 
   const handleCreate = async (formData: any) => {
     try {
-      await importsApi.create(formData);
+      await createImportM.mutateAsync(formData);
       setShowForm(false);
-      loadData();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi tạo phiếu nhập');
     }

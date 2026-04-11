@@ -1,30 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Trash2, Edit2, Search, List } from 'lucide-react';
-import { repairsApi, productsApi, type RepairService, type Product } from '../services/api';
+import { type RepairService } from '../services/api';
+import { useRepairServices, useCreateRepairService, useUpdateRepairService, useDeleteRepairService } from '../hooks/useRepairs';
+import { useProducts } from '../hooks/useProducts';
 import { formatPrice } from '../utils/format';
 import { ServiceFormModal } from '../components/repair/ServiceFormModal';
 
 export const RepairServicesPage: React.FC = () => {
-  const [data, setData] = useState<RepairService[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  const { data = [], isLoading: loading } = useRepairServices();
+  const { data: productsData } = useProducts({ limit: 500 });
+  const products = productsData?.data || [];
+
+  const createServiceM = useCreateRepairService();
+  const updateServiceM = useUpdateRepairService();
+  const deleteServiceM = useDeleteRepairService();
+
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editingData, setEditingData] = useState<any>(null);
-
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await repairsApi.getAllServices();
-      const prodRes = await productsApi.getAll({ limit: 500 });
-      setData(res);
-      setProducts(prodRes.data);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
 
   const handleOpenCreate = () => {
     setEditingId(null);
@@ -55,20 +49,18 @@ export const RepairServicesPage: React.FC = () => {
   const handleSave = async (formData: any) => {
     try {
       if (editingId) {
-        await repairsApi.updateService(editingId, formData);
+        await updateServiceM.mutateAsync({ id: editingId, data: formData });
       } else {
-        await repairsApi.createService(formData);
+        await createServiceM.mutateAsync(formData);
       }
       setShowModal(false);
-      loadData();
     } catch (err) { alert('Lỗi lưu dịch vụ'); }
   };
 
   const handleDelete = async (id: number) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa dịch vụ này?')) return;
     try {
-      await repairsApi.deleteService(id);
-      loadData();
+      await deleteServiceM.mutateAsync(id);
     } catch (err) { alert('Không thể xóa dịch vụ này (có thể đã được sử dụng)'); }
   };
 

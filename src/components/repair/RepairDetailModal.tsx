@@ -1,6 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, Plus, Trash2, CreditCard } from 'lucide-react';
-import { repairsApi, stocksApi, productsApi, type RepairOrder, type RepairService } from '../../services/api';
+import { type RepairOrder, type RepairService } from '../../services/api';
+import { useRepairById, useRepairServices, useAddRepairService, useRemoveRepairItem } from '../../hooks/useRepairs';
+import { useProducts } from '../../hooks/useProducts'; 
+import { useStocks } from '../../hooks/useInventory'; 
+
 import { formatPrice, formatFullDate } from '../../utils/format';
 import { REPAIR_STATUS_MAP } from '../../constants/repair';
 
@@ -14,22 +18,21 @@ interface RepairDetailModalProps {
 }
 
 export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({ 
-  order, onClose, onStatusUpdate, onShowQuickImport, onCreateInvoice, onDelete
+  order: initialOrder, onClose, onStatusUpdate, onShowQuickImport, onCreateInvoice, onDelete
 }) => {
-  const [activeTab, setActiveTab] = useState<'items' | 'logs'>('items');
-  const [services, setServices] = useState<RepairService[]>([]);
-  const [products, setProducts] = useState<any[]>([]);
-  const [stocks, setStocks] = useState<any[]>([]);
+  const { data: order = initialOrder } = useRepairById(initialOrder.id);
+  const { data: services = [] } = useRepairServices();
+  const { data: productsData } = useProducts({ limit: 500 });
+  const products = productsData?.data || [];
+  const { data: stocks = [] } = useStocks({ limit: 500 });
+
+  const addServiceM = useAddRepairService();
+  const removeItemM = useRemoveRepairItem();
   
+  const [activeTab, setActiveTab] = useState<'items' | 'logs'>('items');
   const [showAddItem, setShowAddItem] = useState(false);
   const [addMode, setAddMode] = useState<'service' | 'product'>('service');
   const [newItem, setNewItem] = useState({ item_id: '', quantity: 1, price: 0 });
-
-  useEffect(() => {
-    repairsApi.getAllServices().then(setServices);
-    productsApi.getAll({ limit: 500 }).then(r => setProducts(r.data));
-    stocksApi.getSummary({ limit: 500 }).then(r => setStocks(r || []));
-  }, []);
 
   const handleAddItem = async () => {
     if (!newItem.item_id) { alert('Vui lòng chọn dịch vụ'); return; }
@@ -38,7 +41,7 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
       let payload: any;
       
       if (addMode === 'service') {
-        const service = services.find(s => s.id === newItem.item_id);
+        const service = services.find((s: RepairService) => s.id === newItem.item_id);
         if (!service) return;
         payload = {
           service_id: service.id,
@@ -57,16 +60,15 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
         };
       }
 
-      await repairsApi.addService(order.id, payload);
+      await addServiceM.mutateAsync({ id: order.id, data: payload });
       setShowAddItem(false);
       setNewItem({ item_id: '', quantity: 1, price: 0 });
-      onClose();
     } catch (err: any) {
       const msg = err.response?.data?.message || '';
       if (msg.includes('Không đủ linh kiện') || msg.includes('Không đủ hàng')) {
         let pid = '';
         if (addMode === 'service') {
-          pid = services.find(s => s.id === newItem.item_id)?.product_id;
+          pid = services.find((s: RepairService) => s.id === newItem.item_id)?.product_id;
         } else {
           pid = newItem.item_id;
         }
@@ -83,17 +85,16 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
   const handleRemoveItem = async (it_id: any) => {
     if (!window.confirm('Xác nhận xóa hạng mục này?')) return;
     try {
-      await repairsApi.removeItem(order.id, it_id);
-      onClose();
+      await removeItemM.mutateAsync({ orderId: order.id, itemId: it_id });
     } catch (err) { alert('Lỗi xóa'); }
   };
 
-  const selectedService = addMode === 'service' && newItem.item_id ? services.find(s => s.id === newItem.item_id) : null;
+  const selectedService = addMode === 'service' && newItem.item_id ? services.find((s: RepairService) => s.id === newItem.item_id) : null;
   const selectedProduct = addMode === 'product' && newItem.item_id ? products.find(p => p.id === newItem.item_id) : null;
   
   const currentStockForSvc = addMode === 'service' 
-    ? (selectedService?.service_type === 'REPLACEMENT' && selectedService.product_id ? stocks.find(s => s.product_id === selectedService.product_id)?.total_remaining || 0 : 0)
-    : (selectedProduct ? stocks.find(s => s.product_id === selectedProduct.id)?.total_remaining || 0 : 0);
+    ? (selectedService?.service_type === 'REPLACEMENT' && selectedService.product_id ? stocks.find((s: any) => s.product_id === selectedService.product_id)?.total_remaining || 0 : 0)
+    : (selectedProduct ? stocks.find((s: any) => s.product_id === selectedProduct.id)?.total_remaining || 0 : 0);
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -175,7 +176,7 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
                         onChange={(e) => {
                           const id = e.target.value;
                           if (addMode === 'service') {
-                            const svc = services.find(s => s.id === id);
+                            const svc = services.find((s: RepairService) => s.id === id);
                             setNewItem({...newItem, item_id: id, price: svc?.default_price || 0});
                           } else {
                             const prod = products.find(p => p.id === id);
@@ -226,7 +227,7 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
                   {order.items?.length === 0 ? (
                     <tr><td colSpan={6} style={{ textAlign: 'center', padding: 20, color: '#94a3b8' }}>Chưa có chi phí</td></tr>
                   ) : (
-                    order.items?.map((it) => (
+                    order.items?.map((it: any) => (
                       <tr key={it.id}>
                         <td><span className="cell-main">{it.service_name || products.find(p => p.id === it.product_id)?.name || 'Sản phẩm'}</span></td>
                         <td>

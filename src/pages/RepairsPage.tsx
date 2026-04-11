@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Eye, Wrench, Search, Trash2 } from 'lucide-react';
 import { repairsApi, type RepairOrder } from '../services/api';
+import { useRepairs, useCreateRepair, useUpdateRepair, useDeleteRepair, useCompleteRepair } from '../hooks/useRepairs';
 import { formatPrice, formatFullDate } from '../utils/format';
 import { REPAIR_STATUS_MAP } from '../constants/repair';
 import { RepairFormModal } from '../components/repair/RepairFormModal';
@@ -8,43 +9,30 @@ import { RepairDetailModal } from '../components/repair/RepairDetailModal';
 import { QuickImportModal } from '../components/repair/QuickImportModal';
 
 export const RepairsPage: React.FC = () => {
-  const [data, setData] = useState<RepairOrder[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
+  const limit = 15;
+
+  const { data: repairsData, isLoading: loading } = useRepairs({ page, limit, search });
+  const data = repairsData?.data || [];
+  const total = repairsData?.total || 0;
+
+  const handleSearch = () => setPage(1);
+
+  const createRepairM = useCreateRepair();
+  const updateRepairM = useUpdateRepair();
+  const deleteRepairM = useDeleteRepair();
+  const completeRepairM = useCompleteRepair();
+
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<RepairOrder | null>(null);
   const [showQuickImport, setShowQuickImport] = useState<{ product_id: string; repair_order_id: string } | null>(null);
 
-  const limit = 15;
-
-  useEffect(() => { loadData(); }, [page]);
-
-  const loadData = async () => {
-    setLoading(true);
-    try {
-      const res = await repairsApi.getAll({ page, limit, search });
-      setData(res.data);
-      setTotal(res.total);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = () => { setPage(1); loadData(); };
 
   const handleCreate = async (formData: any) => {
     try {
-      const result = await repairsApi.create({ ...formData, status: 'RECEIVED' });
-      // Log initial status
-      if (result?.id) {
-        await repairsApi.update(result.id, { status: 'RECEIVED' });
-      }
+      await createRepairM.mutateAsync(formData);
       setShowCreateModal(false);
-      loadData();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi tạo phiếu sửa chữa');
     }
@@ -52,12 +40,11 @@ export const RepairsPage: React.FC = () => {
 
   const handleStatusUpdate = async (id: any, status: string, note?: string) => {
     try {
-      await repairsApi.update(id, { status, note });
+      await updateRepairM.mutateAsync({ id, data: { status, note } });
       if (selectedOrder?.id === id) {
         const updated = await repairsApi.getById(id);
         setSelectedOrder(updated);
       }
-      loadData();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi cập nhật trạng thái');
     }
@@ -65,10 +52,9 @@ export const RepairsPage: React.FC = () => {
 
   const handleCreateInvoice = async (id: any) => {
     try {
-      const result = await repairsApi.complete(id);
+      const result = await completeRepairM.mutateAsync(id);
       const invCode = result?.invoice_code || result?.[0]?.invoice_code;
       alert(`✅ Hoàn thành sửa chữa!\n${invCode ? `Hóa đơn: ${invCode}` : 'Đã tạo hóa đơn.'}\nTổng tiền: ${(result?.total_amount || 0).toLocaleString('vi-VN')}đ`);
-      loadData();
       if (selectedOrder?.id === id) setSelectedOrder(null);
     } catch (err: any) {
       alert(err.response?.data?.message || err.message || 'Lỗi hoàn tất sửa chữa');
@@ -78,8 +64,7 @@ export const RepairsPage: React.FC = () => {
   const handleDelete = async (id: any) => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa phiếu sửa chữa này?')) return;
     try {
-      await repairsApi.delete(id);
-      loadData();
+      await deleteRepairM.mutateAsync(id);
       if (selectedOrder?.id === id) setSelectedOrder(null);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi xóa phiếu');
@@ -214,7 +199,6 @@ export const RepairsPage: React.FC = () => {
           onClose={() => setShowQuickImport(null)}
           onSuccess={() => {
             setShowQuickImport(null);
-            loadData();
             if (selectedOrder) {
               repairsApi.getById(selectedOrder.id).then(setSelectedOrder);
             }

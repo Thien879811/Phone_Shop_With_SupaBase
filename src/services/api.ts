@@ -987,6 +987,9 @@ export const socialPostsApi = {
       throw wrapError(error);
     }
   },
+  sync: async (id: any) => {
+    return socialPostsApi.publish(id);
+  },
   uploadImages: async (files: File[]) => {
     try {
       const uploadPromises = files.map(async (file) => {

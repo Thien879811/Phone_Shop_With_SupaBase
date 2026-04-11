@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ArrowDownCircle, ArrowUpCircle, RotateCcw, Settings, History } from 'lucide-react';
-import { stocksApi, type StockMovement } from '../services/api';
+import { useMovements } from '../hooks/useInventory';
 
 const formatDate = (d: string) =>
   new Date(d).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
@@ -14,26 +14,13 @@ const movementMeta: Record<string, { icon: React.ReactNode; color: string; bg: s
 };
 
 export const MovementsPage: React.FC = () => {
-  const [data, setData] = useState<StockMovement[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [filter, setFilter] = useState('');
-  const [loading, setLoading] = useState(false);
   const limit = 20;
 
-  useEffect(() => { loadData(); }, [page, filter]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const params: any = { page, limit };
-      if (filter) params.movement_type = filter;
-      const res = await stocksApi.getMovements(params);
-      setData(res.data);
-      setTotal(res.total);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
+  const { data: moveData, isLoading: loading } = useMovements({ page, limit, movement_type: filter || undefined });
+  const data = moveData?.data || [];
+  const total = moveData?.total || 0;
 
   const totalPages = Math.ceil(total / limit);
 

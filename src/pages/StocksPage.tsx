@@ -1,29 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Search, AlertTriangle, Warehouse } from 'lucide-react';
-import { stocksApi, type StockSummary } from '../services/api';
+import { type StockSummary } from '../services/api';
+import { useStocks } from '../hooks/useInventory';
 
 export const StocksPage: React.FC = () => {
-  const [data, setData] = useState<StockSummary[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
   const limit = 20;
 
-  useEffect(() => { loadData(); }, [page]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await stocksApi.getSummary({ page, limit, search });
-      setData(res);
-      setTotal(res?.length || 0);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
+  const { data: stocksData, isLoading: loading } = useStocks({ page, limit, search });
+  const data = stocksData || [];
+  const total = data?.length || 0;
 
 
-  const handleSearch = () => { setPage(1); loadData(); };
+  const handleSearch = () => { setPage(1); };
   const totalPages = Math.ceil(total / limit);
 
   return (

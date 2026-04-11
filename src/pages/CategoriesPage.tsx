@@ -1,42 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Pencil, Trash2, X, Tags } from 'lucide-react';
-import { categoriesApi, type Category } from '../services/api';
+import { type Category } from '../services/api';
+import { useCategories, useCreateCategory, useUpdateCategory, useDeleteCategory } from '../hooks/useProducts';
 
 export const CategoriesPage: React.FC = () => {
-  const [data, setData] = useState<Category[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { data = [], isLoading: loading } = useCategories();
+  const createCategoryM = useCreateCategory();
+  const updateCategoryM = useUpdateCategory();
+  const deleteCategoryM = useDeleteCategory();
+
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Category | null>(null);
-
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await categoriesApi.getAll();
-      setData(res);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
 
   const handleSave = async (formData: Partial<Category>) => {
     try {
       if (editItem) {
-        await categoriesApi.update(editItem.id, formData);
+        await updateCategoryM.mutateAsync({ id: editItem.id, data: formData });
       } else {
-        await categoriesApi.create(formData);
+        await createCategoryM.mutateAsync(formData);
       }
       setShowForm(false);
       setEditItem(null);
-      loadData();
     } catch (err: any) { alert('Lỗi: ' + (err.response?.data?.message || err.message)); }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm('Xóa danh mục này?')) return;
     try {
-      await categoriesApi.delete(id);
-      loadData();
+      await deleteCategoryM.mutateAsync(id);
     } catch (err: any) { alert('Không thể xóa vì đã có sản phẩm thuộc danh mục này.'); }
   };
 

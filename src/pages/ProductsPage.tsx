@@ -1,61 +1,49 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Search, Pencil, Trash2, Eye, X } from 'lucide-react';
-import { productsApi, categoriesApi, brandsApi, type Product, type Category, type Brand } from '../services/api';
+import { type Product } from '../services/api';
+import { useProducts, useCreateProduct, useUpdateProduct, useDeleteProduct, useCategories, useBrands } from '../hooks/useProducts';
 
 const formatPrice = (val: number) =>
   new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(val);
 
 export const ProductsPage: React.FC = () => {
-  const [data, setData] = useState<Product[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
+  const limit = 15;
+
+  const { data: productsData, isLoading: loading } = useProducts({ page, limit, search });
+  const data = productsData?.data || [];
+  const total = productsData?.total || 0;
+
+  const createProductM = useCreateProduct();
+  const updateProductM = useUpdateProduct();
+  const deleteProductM = useDeleteProduct();
+
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Product | null>(null);
   const [viewItem, setViewItem] = useState<Product | null>(null);
-  const limit = 15;
 
-  useEffect(() => { loadData(); }, [page]);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await productsApi.getAll({ page, limit, search });
-      setData(res.data);
-      setTotal(res.total);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSearch = () => { setPage(1); loadData(); };
+  const handleSearch = () => { setPage(1); };
 
   const handleDelete = async (item: Product) => {
     if (!confirm(`Xóa sản phẩm "${item.name}"?`)) return;
     try {
-      await productsApi.delete(item.id);
-      loadData();
+      await deleteProductM.mutateAsync(item.id);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi xóa sản phẩm');
     }
   };
 
   const handleSave = async (formData: Partial<Product>) => {
-    console.log('Saving product payload:', formData);
     try {
       if (editItem) {
-        await productsApi.update(editItem.id, formData);
+        await updateProductM.mutateAsync({ id: editItem.id, data: formData });
       } else {
-        await productsApi.create(formData);
+        await createProductM.mutateAsync(formData);
       }
       setShowForm(false);
       setEditItem(null);
-      loadData();
     } catch (err: any) {
-      console.error('Save error:', err);
       alert(err.response?.data?.message || 'Lỗi lưu sản phẩm');
     }
   };
@@ -209,8 +197,8 @@ interface ProductFormModalProps {
 }
 
 const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onClose, onSave }) => {
-  const [categories, setCategories] = useState<Category[]>([]);
-  const [brands, setBrands] = useState<Brand[]>([]);
+  const { data: categories = [] } = useCategories();
+  const { data: brands = [] } = useBrands();
 
   const [form, setForm] = useState({
     code: product?.code || '',
@@ -225,10 +213,6 @@ const ProductFormModal: React.FC<ProductFormModalProps> = ({ product, onClose, o
     status: product?.status || 'ACTIVE',
   });
 
-  useEffect(() => {
-    categoriesApi.getAll().then(setCategories).catch(console.error);
-    brandsApi.getAll().then(setBrands).catch(console.error);
-  }, []);
 
   const handleChange = (field: string, value: any) => {
     setForm({ ...form, [field]: value });

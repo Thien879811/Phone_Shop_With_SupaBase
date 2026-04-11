@@ -1,42 +1,33 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Pencil, Trash2, X, Apple } from 'lucide-react'; // Apple as a placeholder icon for brands
-import { brandsApi, type Brand } from '../services/api';
+import { type Brand } from '../services/api';
+import { useBrands, useCreateBrand, useUpdateBrand, useDeleteBrand } from '../hooks/useProducts';
 
 export const BrandsPage: React.FC = () => {
-  const [data, setData] = useState<Brand[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { data = [], isLoading: loading } = useBrands();
+  const createBrandM = useCreateBrand();
+  const updateBrandM = useUpdateBrand();
+  const deleteBrandM = useDeleteBrand();
+
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Brand | null>(null);
-
-  useEffect(() => { loadData(); }, []);
-
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await brandsApi.getAll();
-      setData(res);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
 
   const handleSave = async (formData: Partial<Brand>) => {
     try {
       if (editItem) {
-        await brandsApi.update(editItem.id, formData);
+        await updateBrandM.mutateAsync({ id: editItem.id, data: formData });
       } else {
-        await brandsApi.create(formData);
+        await createBrandM.mutateAsync(formData);
       }
       setShowForm(false);
       setEditItem(null);
-      loadData();
     } catch (err: any) { alert('Lỗi: ' + (err.response?.data?.message || err.message)); }
   };
 
   const handleDelete = async (id: number) => {
     if (!confirm('Xóa thương hiệu này?')) return;
     try {
-      await brandsApi.delete(id);
-      loadData();
+      await deleteBrandM.mutateAsync(id);
     } catch (err: any) { alert('Không thể xóa vì đã có sản phẩm thuộc thương hiệu này.'); }
   };
 

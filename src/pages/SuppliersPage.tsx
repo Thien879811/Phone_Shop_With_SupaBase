@@ -1,36 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Search, Pencil, Trash2, X } from 'lucide-react';
-import { suppliersApi, type Supplier } from '../services/api';
+import { type Supplier } from '../services/api';
+import { useSuppliers, useCreateSupplier, useUpdateSupplier, useDeleteSupplier } from '../hooks/useInventory';
 
 export const SuppliersPage: React.FC = () => {
-  const [data, setData] = useState<Supplier[]>([]);
-  const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showForm, setShowForm] = useState(false);
-  const [editItem, setEditItem] = useState<Supplier | null>(null);
   const limit = 15;
 
-  useEffect(() => { loadData(); }, [page]);
+  const { data: suppliersData, isLoading: loading } = useSuppliers({ page, limit, search });
+  const data = suppliersData?.data || [];
+  const total = suppliersData?.total || 0;
 
-  const loadData = async () => {
-    try {
-      setLoading(true);
-      const res = await suppliersApi.getAll({ page, limit, search });
-      setData(res.data);
-      setTotal(res.total);
-    } catch (err) { console.error(err); }
-    finally { setLoading(false); }
-  };
+  const createSupplierM = useCreateSupplier();
+  const updateSupplierM = useUpdateSupplier();
+  const deleteSupplierM = useDeleteSupplier();
 
-  const handleSearch = () => { setPage(1); loadData(); };
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState<Supplier | null>(null);
+
+  const handleSearch = () => { setPage(1); };
 
   const handleDelete = async (item: Supplier) => {
     if (!confirm(`Xóa nhà cung cấp "${item.name}"?`)) return;
     try {
-      await suppliersApi.delete(item.id);
-      loadData();
+      await deleteSupplierM.mutateAsync(item.id);
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi');
     }
@@ -39,13 +33,12 @@ export const SuppliersPage: React.FC = () => {
   const handleSave = async (formData: Partial<Supplier>) => {
     try {
       if (editItem) {
-        await suppliersApi.update(editItem.id, formData);
+        await updateSupplierM.mutateAsync({ id: editItem.id, data: formData });
       } else {
-        await suppliersApi.create(formData);
+        await createSupplierM.mutateAsync(formData);
       }
       setShowForm(false);
       setEditItem(null);
-      loadData();
     } catch (err: any) {
       alert(err.response?.data?.message || 'Lỗi');
     }

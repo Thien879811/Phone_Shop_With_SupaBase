@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { X, ShoppingCart, AlertTriangle } from 'lucide-react';
-import { productsApi, suppliersApi, repairsApi, type Product, type Supplier } from '../../services/api';
+import { useProductById } from '../../hooks/useProducts';
+import { useSuppliers } from '../../hooks/useInventory';
+import { useQuickImport } from '../../hooks/useRepairs';
 import { formatPrice } from '../../utils/format';
 
 interface QuickImportModalProps {
@@ -16,8 +18,11 @@ export const QuickImportModal: React.FC<QuickImportModalProps> = ({
   onClose, 
   onSuccess 
 }) => {
-  const [product, setProduct] = useState<Product | null>(null);
-  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const { data: product } = useProductById(product_id);
+  const { data: suppliersData } = useSuppliers({ limit: 100 });
+  const suppliers = suppliersData?.data || [];
+  const quickImportM = useQuickImport();
+
   const [form, setForm] = useState({
     supplier_id: '',
     quantity: 1,
@@ -25,16 +30,11 @@ export const QuickImportModal: React.FC<QuickImportModalProps> = ({
     note: ''
   });
 
-  useEffect(() => {
-    productsApi.getById(product_id).then(setProduct);
-    suppliersApi.getAll({ limit: 100 }).then(r => setSuppliers(r.data));
-  }, [product_id]);
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!form.supplier_id) { alert('Vui lòng chọn nhà cung cấp'); return; }
     try {
-      await repairsApi.quickImport({
+      await quickImportM.mutateAsync({
         ...form,
         product_id,
         repair_order_id,
