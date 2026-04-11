@@ -82,20 +82,32 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           height: var(--header-mobile-height);
           background: var(--bg-sidebar);
           border-bottom: 1px solid var(--border);
-          padding: 0 1rem;
+          padding: 0 clamp(0.75rem, 2vw, 1rem);
           position: fixed;
           top: 0;
           left: 0;
           right: 0;
-          z-index: 900;
+          z-index: 901; /* Above overlay */
+          gap: clamp(8px, 2vw, 16px);
+        }
+
+        .mobile-logo {
+          flex: 1;
+          text-align: center;
+          min-width: 0;
         }
 
         .mobile-logo h1 {
-          font-size: 1.1rem;
+          font-size: clamp(0.95rem, 4vw, 1.1rem);
           font-weight: 800;
           background: linear-gradient(135deg, var(--primary), var(--accent));
           -webkit-background-clip: text;
           -webkit-text-fill-color: transparent;
+          background-clip: text;
+          margin: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .mobile-menu-btn, .mobile-action-btn {
@@ -103,45 +115,63 @@ export const Layout: React.FC<LayoutProps> = ({ children }) => {
           border: none;
           color: var(--text-secondary);
           cursor: pointer;
-          width: 40px;
-          height: 40px;
+          width: 44px; /* WCAG minimum touch target */
+          height: 44px;
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 8px;
+          border-radius: var(--radius-md);
+          transition: var(--transition);
+          flex-shrink: 0;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-menu-btn:active, .mobile-action-btn:active {
+          background: var(--bg-card);
+          color: var(--text-primary);
         }
 
         .mobile-header-actions {
           display: flex;
           align-items: center;
-          gap: 8px;
+          gap: clamp(6px, 1.5vw, 10px);
+          flex-shrink: 0;
         }
 
         .mobile-avatar {
-          width: 32px;
-          height: 32px;
+          width: 44px;
+          height: 44px;
           border-radius: 50%;
           background: var(--primary-bg);
           color: var(--primary);
           display: flex;
           align-items: center;
           justify-content: center;
+          flex-shrink: 0;
         }
 
         .mobile-close-btn {
           position: absolute;
-          right: 1.25rem;
-          top: 1.25rem;
+          right: clamp(0.75rem, 3vw, 1.25rem);
+          top: clamp(0.75rem, 3vw, 1.25rem);
           background: var(--bg-card);
           border: 1px solid var(--border);
           color: var(--text-primary);
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
+          width: 44px;
+          height: 44px;
+          border-radius: var(--radius-md);
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 10;
+          z-index: 2001; /* Above sidebar */
+          cursor: pointer;
+          transition: var(--transition);
+          flex-shrink: 0;
+          -webkit-tap-highlight-color: transparent;
+        }
+
+        .mobile-close-btn:active {
+          background: var(--border-light);
         }
 
         @media (min-width: 1024px) {
