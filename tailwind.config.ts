@@ -1,4 +1,4 @@
-import type { Config } from 'tailwindcss'
+﻿import type { Config } from 'tailwindcss'
 
 export default {
   content: [
@@ -23,12 +23,13 @@ export default {
         'warning': 'var(--warning)',
         'danger': 'var(--danger)',
         'info': 'var(--info)',
-      },
-      spacing: {
-        'safe': 'var(--safe-area)',
+        
+        'text-primary': 'var(--text-primary)',
+        'text-secondary': 'var(--text-secondary)',
+        'text-muted': 'var(--text-muted)',
+        'border': 'var(--border)',
       },
       fontSize: {
-        // Responsive font sizes using clamp()
         'xs': 'clamp(10px, 2vw, 12px)',
         'sm': 'clamp(12px, 2.5vw, 14px)',
         'base': 'clamp(14px, 3vw, 16px)',
@@ -39,12 +40,7 @@ export default {
         '4xl': 'clamp(28px, 6vw, 32px)',
       },
       spacing: {
-        'clamp-xs': 'clamp(4px, 1vw, 8px)',
-        'clamp-sm': 'clamp(8px, 2vw, 12px)',
-        'clamp-md': 'clamp(12px, 2.5vw, 16px)',
-        'clamp-lg': 'clamp(16px, 3vw, 20px)',
-        'clamp-xl': 'clamp(20px, 4vw, 24px)',
-        'clamp-2xl': 'clamp(24px, 5vw, 32px)',
+        'safe': 'var(--safe-area)',
       },
       minWidth: {
         'touch': '44px',
@@ -97,6 +93,17 @@ export default {
           to: { opacity: '1', transform: 'translateX(0)' },
         },
       },
+      zIndex: {
+        '100': '100',
+        '900': '900',
+        '1000': '1000',
+        '1500': '1500',
+        '2000': '2000',
+        '3000': '3000',
+      },
+    },
+    fontFamily: {
+      'inter': ['Inter', 'sans-serif'],
     },
   },
   plugins: [],
