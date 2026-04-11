@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { X, Plus, Trash2, CreditCard } from 'lucide-react';
-import { repairsApi, productsApi, stocksApi, type RepairOrder, type RepairService, type Product } from '../../services/api';
+import { repairsApi, stocksApi, type RepairOrder, type RepairService } from '../../services/api';
 import { formatPrice, formatFullDate } from '../../utils/format';
 import { REPAIR_STATUS_MAP } from '../../constants/repair';
 
@@ -17,7 +17,7 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'items' | 'logs'>('items');
   const [services, setServices] = useState<RepairService[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
+  //const [products, setProducts] = useState<Product[]>([]);
   const [stocks, setStocks] = useState<any[]>([]);
   
   const [showAddItem, setShowAddItem] = useState(false);
@@ -25,7 +25,7 @@ export const RepairDetailModal: React.FC<RepairDetailModalProps> = ({
 
   useEffect(() => {
     repairsApi.getAllServices().then(setServices);
-    productsApi.getAll({ limit: 200 }).then(r => setProducts(r.data));
+   // productsApi.getAll({ limit: 200 }).then(r => setProducts(r.data));
     stocksApi.getSummary({ limit: 200 }).then(r => setStocks(r.data));
   }, []);
 
